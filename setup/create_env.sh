@@ -24,8 +24,8 @@ current_date=$(date +%y%m%d)
 env_prefix=lingua_$current_date
 
 # Create the conda environment
-
-source $CONDA_ROOT/etc/profile.d/conda.sh
+eval "$(conda shell.bash hook)"
+# source $CONDA_ROOT/etc/profile.d/conda.sh
 conda create -n $env_prefix python=3.11 -y -c anaconda
 conda activate $env_prefix
 
