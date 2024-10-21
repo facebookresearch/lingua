@@ -20,11 +20,28 @@ bash setup/create_env.sh
 sbatch setup/create_env.sh
 ```
 Once that is done your can activate the environment 
+
 ```
 conda activate lingua_<date>
 ```
-and launch a debug job to check if everything works.  **The provided configurations are templates, you need to adapt them for them to work (change dump_dir, data root dir etc...)**
 
+## Getting data 
+once that is done, you can grab test data and add it to the data dir 
+```python 
+python setup/download_prepare_hf_data.py fineweb_edu_10bt
+```
+
+## Getting tokenizer
+we need to download the given tokenizer and add it to the tokenizers directorie indicated in the config file. 
+
+```python
+TBD
+```
+
+Now you can train our first model
+(Make sure to update the config file - apps/main/configs/debug.yaml )
+
+and launch a debug job to check if everything works.  **The provided configurations are templates, you need to adapt them for them to work (change dump_dir, data root dir etc...)**
 ```bash
 # stool stands for slurm tool !
 python -m lingua.stool script=apps.main.train config=apps/main/configs/debug.yaml nodes=1 partition=<partition>

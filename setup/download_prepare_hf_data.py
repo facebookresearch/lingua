@@ -33,7 +33,7 @@ def parquet_to_jsonl(dataset, work_dir, src_dir, tgt_dir, ntasks=64):
         pipeline=[
             ParquetReader(
                 src_dir,
-                progress=True,
+                file_progress=True,
                 glob_pattern="**/*.parquet",
             ),
             JsonlWriter(
