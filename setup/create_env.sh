@@ -24,6 +24,10 @@ current_date=$(date +%y%m%d)
 env_prefix=lingua_$current_date
 
 # Create the conda environment
+# if CONDA_ROOT not set, find it with "which conda" and go up one level
+if [ -z "$CONDA_ROOT" ]; then
+    CONDA_ROOT=$(dirname "$(dirname "$(which conda)")")
+fi
 
 source $CONDA_ROOT/etc/profile.d/conda.sh
 conda create -n $env_prefix python=3.11 -y -c anaconda
