@@ -219,14 +219,6 @@ def setup_env(env_args):
     atexit.register(shutil.rmtree, triton_cache_dir, ignore_errors=True)
     env_vars["TRITON_CACHE_DIR"] = triton_cache_dir
 
-    # We change the tmp dir to /scratch in case it's slurm job
-    # This avoids filling up the host's usually limited tmpfs
-    # A full tmpfs leads to very slow creation of processes and weird bugs
-    if get_is_slurm_job():
-        new_tmp = f"/scratch/slurm_tmpdir/{os.environ['SLURM_JOB_ID']}"
-        if os.path.exists(new_tmp):
-            env_vars["TMP_DIR"] = new_tmp
-
     for name, value in env_vars.items():
         if os.environ.get(name) != str(value):
             os.environ[name] = str(value)
