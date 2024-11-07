@@ -57,26 +57,37 @@ class MetricLogger:
         self.outdir = outdir
         self.jsonl_writer = None
         self.args = args
-
-    def open(self):
-        if self.jsonl_writer is None:
-            self.jsonl_writer = open(self.outdir, "a")
         if (
             self.args is not None
             and self.args.logging.wandb is not None
             and get_is_master()
         ):
+            self.wandb = True
+
+    def open(self):
+        if self.jsonl_writer is None:
+            self.jsonl_writer = open(self.outdir, "a")
+        if self.wandb:
+            # Read run id from id file if it exists
+            id_file = self.outdir.parent / "run.id"
+            if os.path.exists(id_file):
+                self.args.logging.wandb.resume = "must"
+                with open(id_file, "r") as file:
+                    self.args.logging.wandb.id = file.read().strip()
+                logger.info(f"Resuming run with ID: {self.args.logging.wandb.id}")
+    
+            # Launch wandb run
             run = wandb.init(
                 config=asdict(self.args),
                 **asdict(self.args.logging.wandb),
             )
+    
+            # Save run id to id file
+            with open(id_file, "w") as file:
+                file.write(run.id)
 
     def log(self, metrics: Dict[str, Any]):
-        if (
-            self.args is not None
-            and self.args.logging.wandb is not None
-            and (wandb.run is not None)
-        ):
+        if self.wandb and (wandb.run is not None):
             wandb.log(metrics, step=metrics["global_step"])
 
         metrics.update({"created_at": datetime.now(timezone.utc).isoformat()})
@@ -93,6 +104,12 @@ class MetricLogger:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+        if self.wandb:
+            if exc_type is not None:
+                exit_code = 1
+            else:
+                exit_code = 0
+            wandb.finish(exit_code=exit_code)
 
     def __del__(self):
         self.close()
