@@ -439,17 +439,17 @@ def train(args: TrainArgs):
             # For logging we undo that scaling
             loss = loss.detach() * args.grad_acc_steps
 
-            # Warning: FSDP + clip grad norm for_each=true triggers seg faults on pytorch nightly
-            grad_norm = torch.nn.utils.clip_grad_norm_(
-                model.parameters(), max_norm=args.optim.clip, foreach=True
-            )
-
-            grad_norm = (
-                grad_norm.full_tensor() if isinstance(grad_norm, DTensor) else grad_norm
-            ).item()
-
             # optimizer step
             if train_state.acc_step == 0:
+                # Warning: FSDP + clip grad norm for_each=true triggers seg faults on pytorch nightly
+                grad_norm = torch.nn.utils.clip_grad_norm_(
+                    model.parameters(), max_norm=args.optim.clip, foreach=True
+                )
+
+                grad_norm = (
+                    grad_norm.full_tensor() if isinstance(grad_norm, DTensor) else grad_norm
+                ).item()
+
                 optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad()
