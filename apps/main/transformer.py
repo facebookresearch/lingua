@@ -196,7 +196,7 @@ def tp_parallelize(model, tp_mesh, model_args: LMTransformerArgs, distributed_ar
         layer_plan["attention.wq"] = ColwiseParallel()
         layer_plan["attention.wk"] = ColwiseParallel()
         layer_plan["attention.wv"] = ColwiseParallel()
-        layer_plan["attention.wo"] = RowwiseParallel(output_layouts=Shard(1))
+        layer_plan["attention.wo"] = RowwiseParallel(output_layouts=Shard(1), use_local_output=False)
 
         # Feedforward layers tp
         layer_plan["feed_forward"] = PrepareModuleInput(
@@ -206,7 +206,7 @@ def tp_parallelize(model, tp_mesh, model_args: LMTransformerArgs, distributed_ar
         layer_plan["ffn_norm"] = SequenceParallel()
         layer_plan["feed_forward.w1"] = ColwiseParallel()
         layer_plan["feed_forward.w3"] = ColwiseParallel()
-        layer_plan["feed_forward.w2"] = RowwiseParallel(output_layouts=Shard(1))
+        layer_plan["feed_forward.w2"] = RowwiseParallel(output_layouts=Shard(1), use_local_output=False)
 
         parallelize_module(
             layer,
