@@ -128,7 +128,7 @@ class TrainState(Stateful):
 
 def validate_train_args(args: TrainArgs, output_size: int):
     if args.model.vocab_size < 0:
-        logger.info(f"Setting model output size to {args.model.vocab_size}")
+        logger.info(f"Setting model output size to {output_size}")
         args.model.vocab_size = output_size
     assert (
         args.model.vocab_size == output_size
@@ -137,7 +137,7 @@ def validate_train_args(args: TrainArgs, output_size: int):
     assert args.dump_dir, "Dump dir not set"
 
     if args.checkpoint.path is None:
-        logger.info(f"Setting checkpoint path to {args.checkpoint.path}")
+        logger.info(f"Setting checkpoint path to {str(Path(args.dump_dir) / "checkpoints")}")
         args.checkpoint.path = str(Path(args.dump_dir) / "checkpoints")
 
     for source in args.data.sources:
@@ -187,6 +187,7 @@ def validate_train_args(args: TrainArgs, output_size: int):
     assert (
         args.probe_freq != args.profiling.profile_steps
     ), "Don't profile during probe step"
+
     if args.logging.wandb is not None:
         args.logging.wandb.name = args.name
 
