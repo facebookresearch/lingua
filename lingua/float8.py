@@ -5,71 +5,117 @@ import warnings
 from typing import Callable
 
 import torch
+from torch.distributed.tensor import DTensor, Partial, Shard
 
 # avoid division by zero when calculating scale
 EPS = 1e-12
 
 
+def get_splitk(t):
+    # When tensor parallelism splits the operands along the reduction dim, it's
+    # more natural (and efficient, and accurate) to do sub-row-wise scaling, so
+    # that each rank can compute its own scales independently.
+    if isinstance(t, DTensor) and t.placements == (Shard(dim=1),):
+        return t.device_mesh.size()
+    else:
+        return 1
+
+
+def mul_tiled(a, *bs):
+    # If b is m x n, divide a into m x n chunks and multiply each by an element of b
+    for b in bs:
+        a = a.unflatten(0, (b.shape[0], -1)).unflatten(-1, (b.shape[-1], -1))
+        a = a * b[:, None, :, None]
+        a = a.flatten(end_dim=1).flatten(start_dim=-2)
+    return a
+
+
+def apply_to_partial(fn, t, *args, **kwargs):
+    # With tensor parallelism, _scaled_mm returns a "partial" result, but we do
+    # manual (post-)scaling which we want to apply to each partial term
+    # separately, thus we do this hack to "unpack" the DTensors.
+    if isinstance(t, DTensor) and t.placements == (Partial(),):
+        return torch.distributed.tensor.experimental.local_map(fn, [*t.placements])(t, *args, **kwargs)
+    else:
+        return fn(t, *args, **kwargs)
+
+
 def scale(t, amax_t):
-    min_v = torch.finfo(torch.float8_e4m3fn).min
     max_v = torch.finfo(torch.float8_e4m3fn).max
     scale_t = torch.clamp(amax_t.float(), min=EPS) / max_v
-    t_fp8 = (t / scale_t).clamp(min=min_v, max=max_v).to(torch.float8_e4m3fn)
+    t_fp8 = mul_tiled(t, scale_t.reciprocal()).to(torch.float8_e4m3fn)
     return t_fp8, scale_t
 
 
 def matmul(first, amax_first, second_t, amax_second_t, bias, use_fast_accum):
     first_fp8, scale_first = scale(first, amax_first)
     second_t_fp8, scale_second_t = scale(second_t, amax_second_t)
+
     # PyTorch's row-wise scaled matmul kernel is based on CUTLASS and is quite
     # slow when fast_accum is disabled. Hence we fall back to an "unscaled"
     # matmul, which uses cuBLAS, and apply the scale manually afterwards.
-    output = torch._scaled_mm(
+    post_scales = []
+    post_bias = None
+    if not use_fast_accum:
+        post_scales = [scale_first, scale_second_t.t()]
+        scale_first = scale_first.new_ones((1, 1))
+        scale_second_t = scale_second_t.t().new_ones((1, 1))
+        post_bias, bias = bias, None
+
+    res = torch._scaled_mm(
         first_fp8,
         second_t_fp8.t(),
-        scale_a=scale_first.new_ones((1, 1)),
-        scale_b=scale_second_t.t().new_ones((1, 1)),
-        bias=None,
+        scale_a=scale_first,
+        scale_b=scale_second_t.t(),
+        bias=bias,
         out_dtype=torch.bfloat16,
         use_fast_accum=use_fast_accum,
     )
-    output = (output * scale_first * scale_second_t.t()).to(torch.bfloat16)
-    if bias is not None:
-        output = output + bias
-    return output
+
+    res = apply_to_partial(mul_tiled, res, *post_scales).to(torch.bfloat16)
+    if post_bias is not None:
+        res += post_bias
+
+    return res
 
 
 @torch.compiler.allow_in_graph
 class Fp8LinearFn(torch.autograd.Function):
     @staticmethod
     def forward(ctx, a, b_t, bias):
-        amax_a = a.abs().amax(dim=-1, keepdim=True)
-        amax_b_t = b_t.abs().amax(dim=-1, keepdim=True)
+        amax_a = a.abs().unflatten(-1, (get_splitk(a), -1)).amax(dim=-1)
+        amax_b_t = b_t.abs().unflatten(-1, (get_splitk(b_t), -1)).amax(dim=-1)
         out = matmul(a, amax_a, b_t, amax_b_t, bias, use_fast_accum=True)
 
         ctx.a_requires_grad = a.requires_grad
         ctx.b_requires_grad = b_t.requires_grad
         ctx.bias_requires_grad = bias.requires_grad if bias is not None else False
 
-        ctx.save_for_backward(a, b_t, amax_b_t.max())
+        ctx.save_for_backward(a, b_t, amax_b_t)
 
         return out
 
     @staticmethod
     def backward(ctx, grad_out):
-        a, b_t, amax_b = ctx.saved_tensors
+        a, b_t, amax_b_t = ctx.saved_tensors
 
         # Workaround for https://github.com/pytorch/pytorch/issues/141881.
         # The partitioner would pre-compute the transposed scaling of the weight
         # in the forward (as it's most efficient, but it actually uses too much
         # memory). We prevent that by making the scaling depend on the gradient
         # in a way that has no effect and will be optimized away later.
-        b_t = b_t + grad_out[0, 0] * 0
+        # Care is needed to support tensor parallelism and circumvent bugs.
+        b_t = b_t + grad_out[:1, :, None].squeeze(0) * 0
 
         if ctx.a_requires_grad:
             b = b_t.t().contiguous()
-            amax_grad_out = grad_out.abs().amax(dim=-1, keepdim=True)
-            amax_b = amax_b.repeat(b.shape[0], 1)
+            amax_grad_out = (
+                grad_out.abs().unflatten(-1, (get_splitk(grad_out), -1)).amax(dim=-1)
+            )
+            amax_b = amax_b_t.t().unflatten(-1, (get_splitk(b), -1)).amax(dim=-1)
+            amax_b = amax_b.repeat_interleave(
+                b.shape[0] // amax_b.shape[0], dim=0, output_size=b.shape[0]
+            )
             grad_a = matmul(grad_out, amax_grad_out, b, amax_b, None, use_fast_accum=False)
         else:
             grad_a = None
