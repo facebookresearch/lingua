@@ -2,10 +2,12 @@
 
 import argparse
 import os
-import time
 import subprocess
+import time
+
 import requests
 from huggingface_hub import snapshot_download
+
 
 def run_command(command):
     print(f"Running: {command}")
