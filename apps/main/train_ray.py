@@ -576,10 +576,10 @@ def train(args: TrainArgs):
 @ray.remote
 class RayTrain:
     def __init__(self, config):
-        pass
+        self.config = config
 
-    def train(self, args):
-        train(args)
+    def train(self):
+        train(self.config)
 
 
 def main():
@@ -659,7 +659,10 @@ def main():
             ),
         )
 
-    train(cfg)
+        for j in range(cfg.gpus_per_node // cfg.tp_size):
+            workers.append(worker_cls.remote(cfg))
+
+    ray.get([w.train.remote() for w in workers])
 
 
 if __name__ == "__main__":
