@@ -27,7 +27,7 @@ def download_dataset(repo_id, local_dir, allow_patterns):
                 local_dir=local_dir,
                 allow_patterns=allow_patterns,
                 resume_download=True,
-                max_workers=16, # Don't hesitate to increase this number to lower the download time
+                max_workers=16,  # Don't hesitate to increase this number to lower the download time
             )
             break
         except requests.exceptions.ReadTimeout:
