@@ -632,21 +632,25 @@ def main():
 
     world_size = cfg.num_nodes * cfg.gpus_per_node
     num_workers = cfg.num_nodes * cfg.gpus_per_node // cfg.tp_size
+    world_size = cfg.distributed.num_nodes * cfg.distributed.gpus_per_node
+    num_workers = (
+        cfg.distributed.num_nodes * cfg.distributed.gpus_per_node // cfg.distributed.tp_size
+    )
 
     ray_init(
         RayInitConfig(
             experiment_name="ray_torch_nccl",
-            ray_use_cluster=cfg.use_cluster,
+            ray_use_cluster=True,
             remote_logging_backend=None,
         )
     )
     workers = []
 
-    for i in range(cfg.num_nodes):
-        resources_per_worker = {"CPU": 1, "GPU": cfg.tp_size}
+    for i in range(cfg.distributed.num_nodes):
+        resources_per_worker = {"CPU": 1, "GPU": cfg.distributed.tp_size}
         scaling_config: ScalingConfig = ScalingConfig(
             use_gpu=True,
-            num_workers=cfg.gpus_per_node // cfg.tp_size,
+            num_workers=cfg.distributed.gpus_per_node // cfg.distributed.tp_size,
             resources_per_worker=resources_per_worker,
             placement_strategy="STRICT_PACK",
         )
@@ -659,7 +663,7 @@ def main():
             ),
         )
 
-        for j in range(cfg.gpus_per_node // cfg.tp_size):
+        for j in range(cfg.distributed.gpus_per_node // cfg.distributed.tp_size):
             workers.append(worker_cls.remote(cfg))
 
     ray.get([w.train.remote() for w in workers])
