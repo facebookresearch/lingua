@@ -2,7 +2,6 @@
 
 import atexit
 import contextlib
-from itertools import chain
 import logging
 import multiprocessing as mp
 import os
@@ -15,25 +14,26 @@ import sys
 import tempfile
 from dataclasses import asdict, dataclass
 from functools import lru_cache, partial, reduce
+from itertools import chain
 from typing import List, Optional, Tuple, Union
 
 import torch
-from torch.distributed import ReduceOp
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch import distributed as dist
-from torch.distributed._tensor import DTensor
-from torch.distributed._composable.fsdp import MixedPrecisionPolicy, fully_shard
-from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
-    checkpoint_wrapper,
-)
-from torch.utils.checkpoint import (
-    create_selective_checkpoint_contexts,
-    CheckpointPolicy,
-)
-from torch.distributed.device_mesh import DeviceMesh, init_device_mesh
 
 # for no recompute ops
 import xformers.ops
+from torch import distributed as dist
+from torch.distributed import ReduceOp
+from torch.distributed._composable.fsdp import MixedPrecisionPolicy, fully_shard
+from torch.distributed._tensor import DTensor
+from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
+    checkpoint_wrapper,
+)
+from torch.distributed.device_mesh import DeviceMesh, init_device_mesh
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.checkpoint import (
+    CheckpointPolicy,
+    create_selective_checkpoint_contexts,
+)
 
 from lingua.float8 import convert_linears_to_fp8
 
@@ -249,9 +249,7 @@ def setup_torch_distributed(dist_args):
     os.environ["RANK"] = str(get_global_rank())
     os.environ["WORLD_SIZE"] = str(get_world_size())
     os.environ["MASTER_ADDR"] = get_master_addr()
-    os.environ["MASTER_PORT"] = str(
-        get_master_port(job_id=int(os.environ.get("SLURM_JOB_ID", -1)))
-    )
+    os.environ["MASTER_PORT"] = str(get_master_port(job_id=int(os.environ.get("SLURM_JOB_ID", -1))))
 
     if get_is_torch_run():
         logger.info(f"Run launched with torchrun, local rank: {local_rank}")
@@ -307,9 +305,7 @@ def get_default_policy(no_recompute_ops=None):
 
 
 @torch.no_grad()
-def check_model_value_range(
-    model: torch.nn.Module, range: float = 1e3, std: float = 1e3
-):
+def check_model_value_range(model: torch.nn.Module, range: float = 1e3, std: float = 1e3):
     for name, param in chain(model.named_parameters(), model.named_buffers()):
         if isinstance(param, DTensor):
             param = param.to_local()
@@ -372,9 +368,7 @@ def clean_env():
     cluster_env = {
         x: os.environ.pop(x)
         for x in os.environ
-        if x.startswith(
-            ("SLURM_", "SLURMD_", "SRUN_", "SBATCH_", "SUBMITIT_", "WANDB_")
-        )
+        if x.startswith(("SLURM_", "SLURMD_", "SRUN_", "SBATCH_", "SUBMITIT_", "WANDB_"))
         or x in distrib_names
     }
     try:
@@ -397,9 +391,7 @@ def parallelize_model(
             distributed_args.fsdp_type == "full_shard"
         ), "Only full shard is supported for TP parallelism"
         assert tp_parallelize is not None, "TP plan is required for TP parallelism"
-        assert (
-            distributed_args.compile == False
-        ), "Compile is not supported for TP parallelism"
+        assert distributed_args.compile == False, "Compile is not supported for TP parallelism"
 
         tp_parallelize(model, device_mesh["tp"], model_args, distributed_args)
 
@@ -413,17 +405,10 @@ def parallelize_model(
     param_dtype = dict(fp32=torch.float32, fp16=torch.float16, bf16=torch.bfloat16)[
         distributed_args.model_dtype
     ]
-    if (
-        distributed_args.fsdp_type == "full_shard"
-        or distributed_args.fsdp_type == "no_shard"
-    ):
+    if distributed_args.fsdp_type == "full_shard" or distributed_args.fsdp_type == "no_shard":
         if distributed_args.fsdp_type == "no_shard":
-            assert (
-                distributed_args.dp_shard == 1
-            ), "dp_shard must be 1 for no_shard fsdp_type"
-            assert (
-                device_mesh["dp_shard"].size() == 1
-            ), "dp_shard must be 1 for no_shard fsdp_type"
+            assert distributed_args.dp_shard == 1, "dp_shard must be 1 for no_shard fsdp_type"
+            assert device_mesh["dp_shard"].size() == 1, "dp_shard must be 1 for no_shard fsdp_type"
 
         fsdp_config = dict(
             mp_policy=(
@@ -434,8 +419,7 @@ def parallelize_model(
             ),
             mesh=(
                 device_mesh["dp_replicate", "dp_shard"]
-                if distributed_args.dp_shard > 1
-                or distributed_args.fsdp_type == "no_shard"
+                if distributed_args.dp_shard > 1 or distributed_args.fsdp_type == "no_shard"
                 else device_mesh["dp_replicate"]
             ),
         )
@@ -449,9 +433,7 @@ def parallelize_model(
             set_module(
                 model,
                 path,
-                fully_shard(
-                    module, **fsdp_config, reshard_after_forward=reshard_after_forward
-                ),
+                fully_shard(module, **fsdp_config, reshard_after_forward=reshard_after_forward),
             )
 
         model = fully_shard(model, **fsdp_config, reshard_after_forward=True)
@@ -468,9 +450,7 @@ def parallelize_model(
         )
 
     if distributed_args.compile:
-        torch._dynamo.config.cache_size_limit = (
-            distributed_args.compile_cache_size_limit
-        )
+        torch._dynamo.config.cache_size_limit = distributed_args.compile_cache_size_limit
         model = torch.compile(model)
 
     return model
