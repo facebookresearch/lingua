@@ -1,0 +1,64 @@
+"""
+Bluorion repository
+"""
+
+module(
+    name = "lingua",
+    repo_name = "lingua",
+)
+
+## Python start
+# Inspired by https://github.com/bazelbuild/rules_python/tree/main/examples/pip_parse
+
+# Registry: https://registry.bazel.build/
+
+bazel_dep(name = "rules_python", version = "0.36.0")
+bazel_dep(name = "rules_python_gazelle_plugin", version = "0.36.0")
+bazel_dep(name = "gazelle", version = "0.39.1", repo_name = "bazel_gazelle")
+bazel_dep(name = "aspect_bazel_lib", version = "2.9.1")
+bazel_dep(name = "aspect_rules_py", version = "0.9.1")
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.12.3",
+)
+use_repo(python, "python_versions")
+
+register_toolchains("@python_versions//:all")
+
+use_repo(
+    python,
+    python_3_12 = "python_3_12_3",
+)
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    download_only = True,
+    experimental_requirement_cycles = {
+        # For ray[default]
+        "markdown_it_py": [
+            "markdown_it_py",
+            "mdit_py_plugins",
+        ],
+        # For dask[dataframe]
+        "dask_expr": [
+            "dask_expr",
+            "dask",
+        ],
+        # For dask[distributed]
+        "distributed": [
+            "distributed",
+            "dask_expr",
+            "dask",
+        ],
+    },
+    hub_name = "pip",
+    # We need to use the same version here as in the `python.toolchain` call.
+    python_version = "3.12.3",
+    requirements_lock = "//:requirements_lock.txt",
+    requirements_windows = "//:requirements_windows.txt",
+)
+use_repo(pip, "pip")
+
+## Python end

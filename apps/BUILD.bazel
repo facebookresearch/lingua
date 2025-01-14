@@ -1,0 +1,51 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+
+py_binary(
+    name = "eval",
+    srcs = ["mtp/eval.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":apps",
+        "//apps/main",
+        "//lingua",
+        "@pip//lm_eval",
+        "@pip//omegaconf",
+        "@pip//torch",
+    ],
+)
+
+py_binary(
+    name = "train",
+    srcs = ["mtp/train.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":apps",
+        "//lingua",
+        "@pip//numpy",
+        "@pip//omegaconf",
+        "@pip//torch",
+        "@pip//wandb",
+        "@pip//xformers",
+    ],
+)
+
+py_library(
+    name = "apps",
+    srcs = [
+        "__init__.py",
+        "mtp/eval.py",
+        "mtp/train.py",
+        "mtp/transformer.py",
+    ],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//apps/main",
+        "//lingua",
+        "@pip//lm_eval",
+        "@pip//numpy",
+        "@pip//omegaconf",
+        "@pip//torch",
+        "@pip//wandb",
+        "@pip//xformers",
+    ],
+)

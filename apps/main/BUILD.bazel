@@ -1,0 +1,66 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+
+py_binary(
+    name = "eval",
+    srcs = ["eval.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":main",
+        "//lingua",
+        "@pip//lm_eval",
+        "@pip//omegaconf",
+        "@pip//torch",
+    ],
+)
+
+py_binary(
+    name = "generate",
+    srcs = ["generate.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":main",
+        "//lingua",
+        "@pip//omegaconf",
+        "@pip//torch",
+        "@pip//tqdm",
+        "@pip//xformers",
+    ],
+)
+
+py_binary(
+    name = "train",
+    srcs = ["train.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":main",
+        "//lingua",
+        "@pip//numpy",
+        "@pip//omegaconf",
+        "@pip//torch",
+        "@pip//wandb",
+        "@pip//xformers",
+    ],
+)
+
+py_library(
+    name = "main",
+    srcs = [
+        "__init__.py",
+        "eval.py",
+        "generate.py",
+        "train.py",
+        "train_ray.py",
+        "transformer.py",
+    ],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//lingua",
+        "@pip//lm_eval",
+        "@pip//numpy",
+        "@pip//omegaconf",
+        "@pip//torch",
+        "@pip//tqdm",
+        "@pip//wandb",
+        "@pip//xformers",
+    ],
+)

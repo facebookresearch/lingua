@@ -1,0 +1,42 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+
+py_binary(
+    name = "stool",
+    srcs = ["stool.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":lingua",
+        "@pip//omegaconf",
+    ],
+)
+
+py_library(
+    name = "lingua",
+    srcs = [
+        "__init__.py",
+        "args.py",
+        "checkpoint.py",
+        "data.py",
+        "distributed.py",
+        "float8.py",
+        "logger.py",
+        "metrics.py",
+        "optim.py",
+        "probe.py",
+        "profiling.py",
+        "stool.py",
+        "tokenizer.py",
+        "transformer.py",
+    ],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@pip//numpy",
+        "@pip//omegaconf",
+        "@pip//sentencepiece",
+        "@pip//tiktoken",
+        "@pip//torch",
+        "@pip//viztracer",
+        "@pip//wandb",
+        "@pip//xformers",
+    ],
+)
