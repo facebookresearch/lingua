@@ -1,6 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 
+import datetime
 import gc
 import logging
 import os
@@ -22,6 +23,11 @@ import wandb
 import xformers.profiler
 from omegaconf import OmegaConf
 from ray.air import ScalingConfig
+from ray.air.util.torch_dist import (
+    TorchDistributedWorker,
+    _shutdown_torch_distributed,
+    init_torch_dist_process_group,
+)
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
 from torch.distributed._tensor import DTensor
 from torch.distributed.checkpoint.stateful import Stateful
@@ -574,11 +580,11 @@ def train(args: TrainArgs):
 
 
 @ray.remote
-class RayTrain:
+class RayTrain(TorchDistributedWorker):
     def __init__(self, config):
         self.config = config
 
-    def train(self):
+    def train(self, rank):
         train(self.config)
 
 
@@ -630,8 +636,6 @@ def main():
     cfg = OmegaConf.merge(default_cfg, file_cfg, cli_args)
     cfg = OmegaConf.to_object(cfg)
 
-    world_size = cfg.num_nodes * cfg.gpus_per_node
-    num_workers = cfg.num_nodes * cfg.gpus_per_node // cfg.tp_size
     world_size = cfg.distributed.num_nodes * cfg.distributed.gpus_per_node
     num_workers = (
         cfg.distributed.num_nodes * cfg.distributed.gpus_per_node // cfg.distributed.tp_size
@@ -666,7 +670,11 @@ def main():
         for j in range(cfg.distributed.gpus_per_node // cfg.distributed.tp_size):
             workers.append(worker_cls.remote(cfg))
 
-    ray.get([w.train.remote() for w in workers])
+    ranks = init_torch_dist_process_group(
+        workers, backend="nccl", timeout=datetime.timedelta(seconds=10)
+    )
+    print(ranks)
+    # ray.get([worker.train.remote(rank) for worker, rank in zip(workers, ranks)])
 
 
 if __name__ == "__main__":
