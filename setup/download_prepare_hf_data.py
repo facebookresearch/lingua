@@ -7,6 +7,7 @@ import subprocess
 import requests
 from huggingface_hub import snapshot_download
 
+
 def run_command(command):
     print(f"Running: {command}")
     subprocess.run(command, shell=True, check=True)
@@ -24,7 +25,7 @@ def download_dataset(repo_id, local_dir, allow_patterns):
                 local_dir=local_dir,
                 allow_patterns=allow_patterns,
                 resume_download=True,
-                max_workers=16, # Don't hesitate to increase this number to lower the download time
+                max_workers=16,  # Don't hesitate to increase this number to lower the download time
             )
             break
         except requests.exceptions.ReadTimeout:
@@ -95,10 +96,10 @@ def main(dataset, memory, data_dir, seed=42, nchunks=32):
         "dclm_baseline_1.0_10prct": ".jsonl.zst",
     }[dataset]
     cat_command = {
-        "fineweb_edu": "cat",
-        "fineweb_edu_10bt": "cat",
-        "dclm_baseline_1.0": "zstdcat",
-        "dclm_baseline_1.0_10prct": "zstdcat",
+        "fineweb_edu": "cat {}",
+        "fineweb_edu_10bt": "cat {}",
+        "dclm_baseline_1.0": "zstdcat {} && echo",
+        "dclm_baseline_1.0_10prct": "zstdcat {} && echo",
     }[dataset]
     allow_patterns = {
         "fineweb_edu": None,
@@ -126,7 +127,7 @@ def main(dataset, memory, data_dir, seed=42, nchunks=32):
     terashuf_executable = os.path.join(terashuf_dir, "terashuf")
     run_command(
         f"ulimit -n 100000 && "
-        f"find {src_dir} -type f -name '*{orig_extension}' -print0 | xargs -0 {cat_command} | {terashuf_executable} | "
+        f"find {src_dir} -type f -name '*{orig_extension}' -print0 | xargs -0 -I {{}} sh -c '{cat_command}' | {terashuf_executable} | "
         f"split -n r/{nchunks} -d --suffix-length 2 --additional-suffix {suffix} - {out_dir}/{prefix}"
         "; trap 'echo \"Caught signal 13, exiting with code 1\"; exit 1' SIGPIPE;"
     )
