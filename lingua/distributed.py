@@ -53,6 +53,8 @@ default_no_recompute_ops = {
 
 @dataclass
 class DistributedArgs:
+    num_nodes: int = 1
+    gpus_per_node: int = 8
     dp_shard: int = (
         1  # In how many shard to split the model weight. Typically number gpu in a node.
     )
