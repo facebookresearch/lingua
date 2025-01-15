@@ -43,6 +43,16 @@ py_binary(
 )
 
 py_library(
+    name = "hello_lingua",
+    srcs = ["hello_lingua.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":main",
+        "//lingua",
+    ],
+)
+
+py_library(
     name = "main",
     srcs = [
         "__init__.py",
