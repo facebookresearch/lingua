@@ -49,7 +49,6 @@ py_library(
         "eval.py",
         "generate.py",
         "train.py",
-        "train_ray.py",
         "transformer.py",
     ],
     visibility = ["//:__subpackages__"],
