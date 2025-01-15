@@ -241,7 +241,7 @@ def train(args: TrainArgs):
         dp_degree = dp_mesh.size()
         dp_rank = dp_mesh.get_local_rank()
         if args.distributed.dp_shard > 1:
-            dp_rank = dp_rank * dp_degree + world_mesh["dp_shard"].get_local_rank()
+            dp_rank = dp_rank * world_mesh["dp_shard"].size() + world_mesh["dp_shard"].get_local_rank()
             dp_degree *= world_mesh["dp_shard"].size()
 
         logger.info(f"Running on dp rank : {dp_rank}")
@@ -414,6 +414,9 @@ def train(args: TrainArgs):
                 ), "Probe model shouldn't have grads at this point"
 
             loss = model(input_ids, labels)
+
+            if args.grad_acc_steps > 1:
+                model.set_requires_gradient_sync(train_state.acc_step == 0)
 
             # We scale loss with grad_acc_steps so the gradient is the same
             # regardless of grad_acc_steps
