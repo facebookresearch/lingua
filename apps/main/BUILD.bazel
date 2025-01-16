@@ -58,6 +58,7 @@ py_library(
         "__init__.py",
         "eval.py",
         "generate.py",
+        "hello_lingua.py",
         "train.py",
         "transformer.py",
     ],
