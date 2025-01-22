@@ -9,7 +9,7 @@ manifest:
     IPython: ipython
     PIL: pillow
     RestrictedPython: RestrictedPython
-    TokenizerChanger: TokenizerChanger
+    TokenizerChanger: tokenizerchanger
     absl: absl_py
     accelerate: accelerate
     aenum: aenum
@@ -18,13 +18,16 @@ manifest:
     aimrecords: aimrecords
     aimrocks: aimrocks
     aiofiles: aiofiles
+    aiohappyeyeballs: aiohappyeyeballs
     aiohttp: aiohttp
     aiohttp_cors: aiohttp_cors
     aiosignal: aiosignal
+    airportsdata: airportsdata
     alembic: alembic
     annotated_types: annotated_types
     anyio: anyio
     apache_beam: apache_beam
+    astor: astor
     asttokens: asttokens
     astunparse: astunparse
     asyncache: asyncache
@@ -34,6 +37,7 @@ manifest:
     bcj: pybcj
     beartype: beartype
     bitsandbytes: bitsandbytes
+    blake3: blake3
     blis: blis
     blobfile: blobfile
     boto3: boto3
@@ -45,6 +49,8 @@ manifest:
     cachetools: cachetools
     calflops: calflops
     catalogue: catalogue
+    causal_conv1d: causal_conv1d
+    causal_conv1d_cuda: causal_conv1d
     certifi: certifi
     cffi: cffi
     chardet: chardet
@@ -57,12 +63,15 @@ manifest:
     coloredlogs: coloredlogs
     colorful: colorful
     comm: comm
+    compressed_tensors: compressed_tensors
     confection: confection
     configobj: configobj
     contourpy: contourpy
     cpuinfo: py_cpuinfo
+    cramjam: cramjam
     crcmod: crcmod
     cryptography: cryptography
+    cv2: opencv_python_headless
     cycler: cycler
     cymem: cymem
     dask: dask
@@ -75,8 +84,8 @@ manifest:
     datatrove: datatrove
     dateutil: python_dateutil
     decorator: decorator
-    deepspeed: deepspeed
     deprecated: Deprecated
+    depyf: depyf
     dictdiffer: dictdiffer
     dill: dill
     diskcache: diskcache
@@ -97,12 +106,15 @@ manifest:
     examples: tqdm_multiprocess
     executing: executing
     faiss: faiss_gpu_cu12
-    faiss.contrib.torch: faiss_cpu
+    faiss.setup: faiss_cpu
     faiss.swigfaiss_avx2: faiss_cpu
     faiss.swigfaiss_avx512: faiss_cpu
+    faiss_gpu_cu12.libs.libfaiss-28f1a528: faiss_gpu_cu12
+    faiss_gpu_cu12.libs.libopenblas-r0-f650aae0: faiss_gpu_cu12
     fastapi: fastapi
     fastavro: fastavro
     fasteners: fasteners
+    fastparquet: fastparquet
     filelock: filelock
     flash_attn: flash_attn
     flash_attn_2_cuda: flash_attn
@@ -196,7 +208,6 @@ manifest:
     h11: h11
     h5py: h5py
     hdfs: hdfs
-    hjson: hjson
     hopper: flash_attn
     httpcore: httpcore
     httplib2: httplib2
@@ -210,6 +221,7 @@ manifest:
     idna: idna
     importlib_metadata: importlib_metadata
     inflate64: inflate64
+    iniconfig: iniconfig
     interegular: interegular
     ipywidgets: ipywidgets
     iso8601: iso8601
@@ -270,7 +282,6 @@ manifest:
     lightning_fabric: pytorch_lightning
     lightning_utilities: lightning_utilities
     linkify_it: linkify_it_py
-    llvmlite: llvmlite
     lm_eval: lm_eval
     lmformatenforcer: lm_format_enforcer
     locket: locket
@@ -311,7 +322,6 @@ manifest:
     networkx: networkx
     ninja: ninja
     nltk: nltk
-    numba: numba
     numexpr: numexpr
     numpy: numpy
     nvidia: nvidia_cuda_runtime_cu12
@@ -350,6 +360,7 @@ manifest:
     opencensus.stats: opencensus
     opencensus.tags: opencensus
     opencensus.trace: opencensus
+    opencv_python_headless.libs.libopenblas-r0-f650aae0: opencv_python_headless
     openinference.instrumentation: openinference_instrumentation
     openinference.instrumentation.langchain: openinference_instrumentation_langchain
     openinference.semconv: openinference_semantic_conventions
@@ -372,6 +383,13 @@ manifest:
     opentelemetry.propagate: opentelemetry_api
     opentelemetry.propagators.composite: opentelemetry_api
     opentelemetry.propagators.textmap: opentelemetry_api
+    opentelemetry.sdk.environment_variables: opentelemetry_sdk
+    opentelemetry.sdk.error_handler: opentelemetry_sdk
+    opentelemetry.sdk.metrics: opentelemetry_sdk
+    opentelemetry.sdk.resources: opentelemetry_sdk
+    opentelemetry.sdk.trace: opentelemetry_sdk
+    opentelemetry.sdk.util: opentelemetry_sdk
+    opentelemetry.sdk.version: opentelemetry_sdk
     opentelemetry.semconv: opentelemetry_semantic_conventions
     opentelemetry.trace: opentelemetry_api
     opentelemetry.util.re: opentelemetry_api
@@ -381,6 +399,7 @@ manifest:
     optree: optree
     orjson: orjson
     outlines: outlines
+    outlines_core: outlines_core
     packaging: packaging
     pandas: pandas
     parso: parso
@@ -394,20 +413,22 @@ manifest:
     pip: pip
     pkg_resources: setuptools
     platformdirs: platformdirs
+    pluggy: pluggy
     portalocker: portalocker
     preshed: preshed
     prometheus_client: prometheus_client
     prometheus_fastapi_instrumentator: prometheus_fastapi_instrumentator
     prompt_toolkit: prompt_toolkit
+    propcache: propcache
     proto: proto_plus
     psutil: psutil
     psycopg2: psycopg2_binary
     ptyprocess: ptyprocess
     pudb: pudb
     pure_eval: pure_eval
+    py: pytest
     py4j: py4j
     py7zr: py7zr
-    pyairports: pyairports
     pyarrow: pyarrow
     pyarrow_hotfix: pyarrow_hotfix
     pyasn1: pyasn1
@@ -436,6 +457,7 @@ manifest:
     pyppmd: pyppmd
     pyspark: pyspark
     pytablewriter: pytablewriter
+    pytest: pytest
     pythonjsonlogger: python_json_logger
     pytorch_lightning: pytorch_lightning
     pytz: pytz
@@ -525,7 +547,6 @@ manifest:
     transformers: transformers
     triton: triton
     trl: trl
-    typeguard: typeguard
     typepy: typepy
     typer: typer
     typing_extensions: typing_extensions
@@ -542,8 +563,6 @@ manifest:
     virtualenv: virtualenv
     viztracer: viztracer
     vllm: vllm
-    vllm_flash_attn: vllm_flash_attn
-    vllm_flash_attn_2_cuda: vllm_flash_attn
     wandb: wandb
     wasabi: wasabi
     watchdog: watchdog
@@ -559,6 +578,7 @@ manifest:
     wrapt: wrapt
     wsproto: wsproto
     xformers: xformers
+    xgrammar: xgrammar
     xxhash: xxhash
     yaml: PyYAML
     yarl: yarl
@@ -568,4 +588,4 @@ manifest:
     zstandard: zstandard
   pip_repository:
     name: pip
-integrity: e6eed38eb047581a2f03bc22f64e0ee0a0897f4c4e76e15050ca84c9edb5e580
+integrity: 136ae3cef6d889b08bca03034d7b442749dfc8b89311d3573fbc62d6bb8f9cb5

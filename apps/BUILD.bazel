@@ -5,8 +5,8 @@ py_binary(
     srcs = ["mtp/eval.py"],
     visibility = ["//:__subpackages__"],
     deps = [
-        "//external:apps",
-        "//external/apps:main",
+        ":apps",
+        "//apps/main",
         "//lingua",
         "@pip//lm_eval",
         "@pip//omegaconf",
