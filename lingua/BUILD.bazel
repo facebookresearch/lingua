@@ -1,42 +1,133 @@
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 
-py_binary(
-    name = "stool",
-    srcs = ["stool.py"],
+py_library(
+    name = "args",
+    srcs = ["args.py"],
+    visibility = ["//:__subpackages__"],
+    deps = ["@pip//omegaconf"],
+)
+
+py_library(
+    name = "checkpoint",
+    srcs = ["checkpoint.py"],
     visibility = ["//:__subpackages__"],
     deps = [
-        ":lingua",
+        ":distributed",
         "@pip//omegaconf",
+        "@pip//torch",
     ],
 )
 
 py_library(
-    name = "lingua",
-    srcs = [
-        "__init__.py",
-        "args.py",
-        "checkpoint.py",
-        "data.py",
-        "distributed.py",
-        "float8.py",
-        "logger.py",
-        "metrics.py",
-        "optim.py",
-        "probe.py",
-        "profiling.py",
-        "stool.py",
-        "tokenizer.py",
-        "transformer.py",
-    ],
+    name = "data",
+    srcs = ["data.py"],
     visibility = ["//:__subpackages__"],
     deps = [
+        ":tokenizer",
         "@pip//numpy",
+    ],
+)
+
+py_library(
+    name = "distributed",
+    srcs = ["distributed.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":float8",
+        "@pip//torch",
+        "@pip//xformers",
+    ],
+)
+
+py_library(
+    name = "float8",
+    srcs = ["float8.py"],
+    visibility = ["//:__subpackages__"],
+    deps = ["@pip//torch"],
+)
+
+py_library(
+    name = "logger",
+    srcs = ["logger.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [":distributed"],
+)
+
+py_library(
+    name = "metrics",
+    srcs = ["metrics.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":distributed",
         "@pip//omegaconf",
-        "@pip//sentencepiece",
-        "@pip//tiktoken",
+        "@pip//torch",
+        "@pip//wandb",
+    ],
+)
+
+py_library(
+    name = "optim",
+    srcs = ["optim.py"],
+    visibility = ["//:__subpackages__"],
+    deps = ["@pip//torch"],
+)
+
+py_library(
+    name = "probe",
+    srcs = ["probe.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@pip//torch",
+        "@pip//xformers",
+    ],
+)
+
+py_library(
+    name = "profiling",
+    srcs = ["profiling.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":distributed",
         "@pip//torch",
         "@pip//viztracer",
         "@pip//wandb",
         "@pip//xformers",
     ],
+)
+
+py_binary(
+    name = "stool",
+    srcs = ["stool.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":args",
+        "@pip//omegaconf",
+    ],
+)
+
+py_library(
+    name = "tokenizer",
+    srcs = ["tokenizer.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@pip//sentencepiece",
+        "@pip//tiktoken",
+    ],
+)
+
+py_library(
+    name = "transformer",
+    srcs = ["transformer.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":probe",
+        "@pip//torch",
+        "@pip//xformers",
+    ],
+)
+
+py_library(
+    name = "hello_lingua",
+    srcs = ["hello_lingua.py"],
+    visibility = ["//:__subpackages__"],
 )

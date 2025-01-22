@@ -20,6 +20,7 @@ modules_mapping(
     wheels = all_whl_requirements,
 )
 
+# gazelle:python_generation_mode file
 # bazel run //:gazelle_python_manifest.update
 gazelle_python_manifest(
     name = "gazelle_python_manifest",
@@ -33,7 +34,7 @@ gazelle(
     name = "gazelle",
     gazelle = "@rules_python_gazelle_plugin//python:gazelle_binary",
 )
-
+# gazelle:exclude apps
 # gazelle:exclude apps/mamba
 # gazelle:exclude apps/plots
 # gazelle:exclude apps/fastRNN
