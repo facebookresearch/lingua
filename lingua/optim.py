@@ -85,6 +85,9 @@ def lr_wsd(
     cycle_num = step // int(n_steps * cycle_length) + 1
     curr_n_steps = int(n_steps * cycle_length) * cycle_num
     decay_length = int(curr_n_steps * decay_fraction)
+    if step == n_steps:
+        cycle_num -= 1
+        curr_n_steps = n_steps
     
     if step < warmup:
         lr = float(step) / warmup
@@ -96,8 +99,9 @@ def lr_wsd(
         # intercept = min_ratio + ((1.0 - min_ratio) * curr_n_steps) / decay_length
         # lr = slope * step + intercept
 
-        step = step - (curr_n_steps - decay_length)
-        lr = 1/((step/curr_n_steps)*(1/min_ratio) + (1 - step/curr_n_steps))
+        step_in_decay = step - (curr_n_steps - decay_length)
+        progress = step_in_decay / decay_length  
+        lr = 1 / (progress * (1/min_ratio) + (1 - progress))
     else:
         lr = min_ratio
 
