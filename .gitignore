@@ -3,3 +3,4 @@
 *.ipynb
 slurm-*.out
 wandb
+bazel*
