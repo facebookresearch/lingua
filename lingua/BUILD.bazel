@@ -14,7 +14,7 @@ py_library(
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
-        ":distributed",
+        "//lingua:distributed",
         "@pip//omegaconf",
         "@pip//torch",
     ],
@@ -26,7 +26,7 @@ py_library(
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
-        ":tokenizer",
+        "//lingua:tokenizer",
         "@pip//numpy",
     ],
 )
@@ -56,7 +56,7 @@ py_library(
     srcs = ["logger.py"],
     imports = [".."],
     visibility = ["//:__subpackages__"],
-    deps = [":distributed"],
+    deps = ["//lingua:distributed"],
 )
 
 py_library(
@@ -65,7 +65,7 @@ py_library(
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
-        ":distributed",
+        "//lingua:distributed",
         "@pip//omegaconf",
         "@pip//torch",
         "@pip//wandb",
@@ -97,7 +97,7 @@ py_library(
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
-        ":distributed",
+        "//lingua:distributed",
         "@pip//torch",
         "@pip//viztracer",
         "@pip//wandb",
@@ -111,7 +111,7 @@ py_binary(
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
-        ":args",
+        "//lingua:args",
         "@pip//omegaconf",
     ],
 )
@@ -133,7 +133,7 @@ py_library(
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
-        ":probe",
+        "//lingua:probe",
         "@pip//torch",
         "@pip//xformers",
     ],
