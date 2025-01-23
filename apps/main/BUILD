@@ -4,7 +4,10 @@ py_binary(
     name = "eval",
     srcs = ["eval.py"],
     imports = ["../.."],
-    visibility = ["//lingua_repo:__subpackages__"],
+    visibility = [
+        "//:__subpackages__",
+        "//lingua_repo:__subpackages__",
+    ],
     deps = [
         ":generate",
         ":transformer",
@@ -22,7 +25,10 @@ py_binary(
     name = "generate",
     srcs = ["generate.py"],
     imports = ["../.."],
-    visibility = ["//lingua_repo:__subpackages__"],
+    visibility = [
+        "//:__subpackages__",
+        "//lingua_repo:__subpackages__",
+    ],
     deps = [
         ":transformer",
         "//lingua_repo/lingua:args",
@@ -40,7 +46,10 @@ py_binary(
     name = "train",
     srcs = ["train.py"],
     imports = ["../.."],
-    visibility = ["//lingua_repo:__subpackages__"],
+    visibility = [
+        "//:__subpackages__",
+        "//lingua_repo:__subpackages__",
+    ],
     deps = [
         ":eval",
         ":transformer",
@@ -67,7 +76,10 @@ py_library(
     name = "transformer",
     srcs = ["transformer.py"],
     imports = ["../.."],
-    visibility = ["//lingua_repo:__subpackages__"],
+    visibility = [
+        "//:__subpackages__",
+        "//lingua_repo:__subpackages__",
+    ],
     deps = [
         "//lingua_repo/lingua:transformer",
         "@pip//torch",
