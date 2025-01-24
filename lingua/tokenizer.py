@@ -1,16 +1,17 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import abc
+import logging
+import os
 from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
-import logging
-import os
 
-from sentencepiece import SentencePieceProcessor
 import tiktoken
+from sentencepiece import SentencePieceProcessor
 from tiktoken.load import load_tiktoken_bpe
+from transformers import AutoTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -90,16 +91,12 @@ class SentencePieceTokenizer(Tokenizer):
         self.bos_id: int = self.sp_model.bos_id()
         self.eos_id: int = self.sp_model.eos_id()
         self.pad_id: int = self.sp_model.pad_id()
-        logger.info(
-            f"#words: {self.n_words} - BOS ID: {self.bos_id} - EOS ID: {self.eos_id}"
-        )
+        logger.info(f"#words: {self.n_words} - BOS ID: {self.bos_id} - EOS ID: {self.eos_id}")
         assert self.sp_model.vocab_size() == self.sp_model.get_piece_size()
 
     def encode(self, s: str, add_bos: bool, add_eos: bool):
         assert type(s) is str
-        tokens = (
-            [self.bos_id] * add_bos + self.sp_model.encode(s) + [self.eos_id] * add_eos
-        )
+        tokens = [self.bos_id] * add_bos + self.sp_model.encode(s) + [self.eos_id] * add_eos
         return tokens
 
     def decode(self, tokens: List[int]):
@@ -150,9 +147,7 @@ class TikTokenTokenizer(Tokenizer):
 
         self.n_words: int = self.tkt_model.n_vocab
 
-        logger.info(
-            f"#words: {self.n_words} - BOS ID: {self.bos_id} - EOS ID: {self.eos_id}"
-        )
+        logger.info(f"#words: {self.n_words} - BOS ID: {self.bos_id} - EOS ID: {self.eos_id}")
 
     def encode(self, s: str, add_bos: bool, add_eos: bool):
         assert isinstance(s, str)
@@ -187,6 +182,26 @@ class TikTokenTokenizer(Tokenizer):
         return substrs, offsets
 
 
+class HFTokenizer(Tokenizer):
+    def __init__(self, model_name: str):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.bos_id = self.tokenizer.bos_token_id
+        self.eos_id = self.tokenizer.eos_token_id
+        self.pad_id = self.tokenizer.pad_token_id
+        self.n_words = self.tokenizer.vocab_size
+
+    def encode(self, s: str, add_bos: bool, add_eos: bool):
+        return self.tokenizer.encode(s, add_special_tokens=add_bos or add_eos)
+
+    def decode(self, tokens: List[int]):
+        return self.tokenizer.decode(tokens)
+
+    def get_token_offsets(
+        self, text: str, tokens: Optional[List[int]] = None
+    ) -> Tuple[List[str], List[int]]:
+        return self.tokenizer.convert_ids_to_tokens(tokens), []
+
+
 def build_tokenizer(name: str, path: Optional[str] = None) -> Tokenizer:
     if name == "bytes":
         return ByteTokenizer()
@@ -196,5 +211,7 @@ def build_tokenizer(name: str, path: Optional[str] = None) -> Tokenizer:
         return SentencePieceTokenizer(path)
     elif name == "tiktoken":
         return TikTokenTokenizer(path)
+    elif name == "hf":
+        return HFTokenizer(path)
     else:
         raise NotImplementedError(f"{name} tokenizer type is not implemented")
