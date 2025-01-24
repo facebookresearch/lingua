@@ -124,6 +124,7 @@ py_library(
     deps = [
         "@pip//sentencepiece",
         "@pip//tiktoken",
+        "@pip//transformers",
     ],
 )
 
