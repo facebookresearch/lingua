@@ -1,6 +1,6 @@
 # Template config, need to change dump_dir, data.root_dir and data.tokenizer.path
 
-# dump_dir: !!CHANGETHIS!!
+dump_dir: /mnt/nfs/home/gmi/training_output
 name: "debug"
 steps: 1000
 probe_freq: 100
@@ -17,7 +17,9 @@ distributed:
     model_dtype: bf16
     matmul_allow_tf32: false
     selective_activation_checkpointing: false
-    tp_size: 1
+    num_nodes: 1
+    gpus_per_node: 8
+    tp_size: 2
 
 model:
     dim: 1024
@@ -25,9 +27,10 @@ model:
     n_heads: 8
 
 data:
-    root_dir: data/shuffled
+    root_dir: /mnt/nfs/home/gmi/hf_data/HuggingFaceFW
     sources:
-        dclm_baseline_1.0: 1.0
+        # dclm_baseline_1.0: 1.0
+        fineweb_edu_10bt_shuffled: 1.0
     batch_size: 32
     prefetch_size: 64
     seq_len: 2048
@@ -35,6 +38,7 @@ data:
     load_async: true
     tokenizer:
         name: bytes
+        path: /mnt/nfs/home/gmi/hf_models/meta-llama/Llama-3.2-3B
 
 profiling:
     run: true
