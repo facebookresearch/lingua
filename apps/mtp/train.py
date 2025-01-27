@@ -322,7 +322,6 @@ def train(args: TrainArgs):
                     else None
                 ),
             )
-            probe_mod = model._orig_mod if args.distributed.compile else model
 
         gc.disable()
 
@@ -387,7 +386,7 @@ def train(args: TrainArgs):
                 # batch size to avoid OOM
                 # This assumes the model has no stateful layers (batch norm..)
                 assert (
-                    next(probe_mod.parameters()).grad is None
+                    next(model.parameters()).grad is None
                 ), "Can't probe model if grads are not reset"
 
                 with probe:
@@ -400,7 +399,7 @@ def train(args: TrainArgs):
                     # So we divide bsz by 2 or seqlen by 2
                     probe_bsz = max(1, bsz // 2)
                     probe_seq = seqlen if (bsz // 2 >= 1) else (seqlen // 2)
-                    probe_loss = probe_mod(
+                    probe_loss = model(
                         input_ids[:probe_bsz, :probe_seq],
                         labels[:probe_bsz, :probe_seq],
                     )
@@ -409,7 +408,7 @@ def train(args: TrainArgs):
                     optimizer.zero_grad()
 
                 assert (
-                    next(probe_mod.parameters()).grad is None
+                    next(model.parameters()).grad is None
                 ), "Probe model shouldn't have grads at this point"
 
             losses = model(input_ids, labels)
