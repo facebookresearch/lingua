@@ -291,6 +291,17 @@ class RMSNorm(nn.Module):
     def reset_parameters(self):
         torch.nn.init.ones_(self.weight)  # type: ignore
 
+class TiedLinear(nn.Module):
+    def __init__(self, tied_module: nn.Module) -> None:
+        super().__init__()
+        self.tied_module = tied_module
+        if not hasattr(tied_module, "weight"):
+            raise AttributeError(
+                "Provided module does not have attribute 'weight'. Please check your tied_module."
+            )
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        return F.linear(x, self.tied_module.weight)
 
 class Attention(nn.Module):
     def __init__(

@@ -455,7 +455,9 @@ def parallelize_model(
         )
 
     if distributed_args.compile:
-        torch._dynamo.config.cache_size_limit = distributed_args.compile_cache_size_limit
-        model = torch.compile(model)
+        torch._dynamo.config.cache_size_limit = (
+            distributed_args.compile_cache_size_limit
+        )
+        model.compile()
 
     return model
