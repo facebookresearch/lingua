@@ -188,7 +188,7 @@ class HFTokenizer(Tokenizer):
         self.bos_id = self.tokenizer.bos_token_id
         self.eos_id = self.tokenizer.eos_token_id
         self.pad_id = self.tokenizer.pad_token_id
-        self.n_words = self.tokenizer.vocab_size
+        self.n_words = len(self.tokenizer)
 
     def encode(self, s: str, add_bos: bool, add_eos: bool):
         return self.tokenizer.encode(s, add_special_tokens=add_bos or add_eos)
