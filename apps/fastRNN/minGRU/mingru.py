@@ -6,7 +6,7 @@ from typing import Optional
 import torch
 from torch import nn
 
-from lingua.transformer import RMSNorm, cross_entropy
+from lingua.transformer import RMSNorm, TiedLinear, cross_entropy
 from apps.fastRNN.minGRU.core_gru import BaseMinGRUArgs, BaseMinGRU
 
 
@@ -58,15 +58,15 @@ class LMMinGRU(BaseMinGRU):
         self.tok_embeddings = torch.nn.Embedding(args.vocab_size, args.dim)
 
         self.norm = RMSNorm(args.dim, eps=args.norm_eps)
-
-        self.output = nn.Linear(
-            args.dim,
-            args.vocab_size,
-            bias=False,
-        )
-
+        
         if args.weight_tying:
-            self.output.weight = self.embeddings.tok_embeddings.weight
+            self.output = TiedLinear(self.tok_embeddings)
+        else:
+            self.output = nn.Linear(
+                args.dim,
+                args.vocab_size,
+                bias=False,
+            )
 
     def forward(
         self,
