@@ -1,20 +1,21 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import contextlib
-from copy import deepcopy
-from functools import partial
 import json
-from dataclasses import dataclass, field
-from multiprocessing import Process, Queue, Event
-from queue import Full, Empty
-from multiprocessing.synchronize import Event as EventClass
-import os
-from pathlib import Path
-from queue import Full
-from typing import Dict, Any, Iterator, Optional, TypedDict
-from lingua.tokenizer import build_tokenizer, TokenizerArgs
-import numpy as np
 import logging
+import os
+from copy import deepcopy
+from dataclasses import dataclass, field
+from functools import partial
+from multiprocessing import Event, Process, Queue
+from multiprocessing.synchronize import Event as EventClass
+from pathlib import Path
+from queue import Empty, Full
+from typing import Any, Dict, Iterator, Optional, TypedDict
+
+import numpy as np
+
+from lingua.tokenizer import TokenizerArgs, build_tokenizer
 
 logger = logging.getLogger()
 
@@ -60,6 +61,7 @@ Both can be called with a resume_state to resume from any given position determi
 """
 
 TRAIN_DATA_FILE_PATTERN = "*.chunk.*.jsonl"
+
 
 class JSONLState(TypedDict):
     """Represents the current state of a JSON line reader.
@@ -170,7 +172,7 @@ def read_jsonl(
         offset=offset,
         current_iter=current_iter,
     )
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         file.seek(position)
         while line := file.readline():
             current_line += 1
@@ -419,9 +421,7 @@ def batch_and_shuffle_prefetched_sequences(
     - numpy.ndarray: An array of shape `(batch_size, seq_len, n_views)` containing the packed tokens.
     - PrefetchState: The state required to resume prefetched batch. Contains also the internal of iterator.
     """
-    prefetch_buffer = -1 * np.ones(
-        (prefetch_size * batch_size, seq_len, n_views), dtype=int
-    )
+    prefetch_buffer = -1 * np.ones((prefetch_size * batch_size, seq_len, n_views), dtype=int)
     rng = np.random.default_rng()
     rng.bit_generator.state = state["rng_state"]
 
@@ -466,7 +466,9 @@ def batch_and_shuffle_prefetched_sequences(
         idx = (idx + 1) % prefetch_size
 
 
-def find_and_sanitize_chunks(dataset_path: str, world_size: int, file_pattern: str = TRAIN_DATA_FILE_PATTERN):
+def find_and_sanitize_chunks(
+    dataset_path: str, world_size: int, file_pattern: str = TRAIN_DATA_FILE_PATTERN
+):
     dataset_chunks = [str(p) for p in Path(dataset_path).glob(file_pattern)]
     n_chunks = len(dataset_chunks)
 
@@ -474,9 +476,7 @@ def find_and_sanitize_chunks(dataset_path: str, world_size: int, file_pattern: s
         n_discard = n_chunks - world_size
         dataset_chunks = dataset_chunks[:world_size]
     else:
-        assert (
-            world_size % n_chunks == 0
-        ), "World size should be a multiple of number of chunks"
+        assert world_size % n_chunks == 0, "World size should be a multiple of number of chunks"
 
     assert n_chunks > 0, f"No valid chunks in {dataset_path}"
 
@@ -523,9 +523,7 @@ def init_choice_state(
         )
         data_path_to_jsonl_state[dataset_path] = jsonl_state
 
-    multi_rng_state = np.random.default_rng(
-        (seed, rank, world_size)
-    ).bit_generator.state
+    multi_rng_state = np.random.default_rng((seed, rank, world_size)).bit_generator.state
 
     multi_choice_state = MultiChoiceState(
         root_dir=root_dir,
@@ -550,10 +548,15 @@ def init_state(
     add_eos: bool,
     tokenizer_name: str,
     tokenizer_path: Optional[str] = None,
-    file_pattern: str = TRAIN_DATA_FILE_PATTERN
+    file_pattern: str = TRAIN_DATA_FILE_PATTERN,
 ):
     multi_choice_state = init_choice_state(
-        root_dir=root_dir, sources=sources, seed=seed, rank=rank, world_size=world_size, file_pattern=file_pattern
+        root_dir=root_dir,
+        sources=sources,
+        seed=seed,
+        rank=rank,
+        world_size=world_size,
+        file_pattern=file_pattern,
     )
     tokenizer_state = TokenizerState(
         it_state=multi_choice_state,
@@ -570,9 +573,7 @@ def init_state(
         seq_len=0,
     )
 
-    prefetch_rng_state = np.random.default_rng(
-        (seed + 1, rank, world_size)
-    ).bit_generator.state
+    prefetch_rng_state = np.random.default_rng((seed + 1, rank, world_size)).bit_generator.state
 
     return PrefetchState(
         it_state=pack_state,
@@ -667,16 +668,12 @@ def consume_buffer(producer: Process, queue: Queue):
     """
     while producer.exitcode is None:
         try:
-            item = queue.get(
-                timeout=0.1
-            )  # Tries to get an item from the queue with a timeout
+            item = queue.get(timeout=0.1)  # Tries to get an item from the queue with a timeout
             yield item
         except Empty:
             pass
 
-    raise RuntimeError(
-        "Data loader quit unexpectedly, real error has been raised previously"
-    )
+    raise RuntimeError("Data loader quit unexpectedly, real error has been raised previously")
 
 
 @contextlib.contextmanager
@@ -701,9 +698,7 @@ def async_iterator(buffer_size: int, iterator_builder):
             logger.info(f"Killing async data process {producer.pid} ...")
             producer.kill()
         else:
-            logger.info(
-                f"Async data process {producer.pid} exited with code {producer.exitcode}"
-            )
+            logger.info(f"Async data process {producer.pid} exited with code {producer.exitcode}")
         logger.info("Async dataloader cleaned up")
 
 
