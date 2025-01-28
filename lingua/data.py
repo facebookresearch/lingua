@@ -717,6 +717,23 @@ class DataArgs:
     tokenizer: TokenizerArgs = field(default_factory=TokenizerArgs)
 
 
+@dataclass
+class RayDataArgs:
+    config: str = (
+        "pretraining/recipe/data_configs/fweduscore2_4096_llama3_64k_tree_with_intervals.yaml"
+    )
+    n_views: int = 2
+    batch_size: int = 2
+    num_examples_to_prefetch: int = 2
+    crash_if_data_stalled: bool = True
+    seed: int = 42
+    add_bos: bool = True
+    add_eos: bool = True
+    load_async: bool = True
+    prefetch_size: int = 64
+    tokenizer: TokenizerArgs = field(default_factory=TokenizerArgs)
+
+
 def init_dataloader_state_from_args(
     args: DataArgs,
     rank: int,
