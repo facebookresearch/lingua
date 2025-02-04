@@ -430,6 +430,7 @@ def parallelize_model(
             # Assume that the model has list of layers and group around it
             fsdp_grouping_plan = default_fsdp_grouping_plan(len(model.layers))
 
+        modules = [get_module(model, path) for path, _ in fsdp_grouping_plan]
         for path, reshard_after_forward in fsdp_grouping_plan:
             module = get_module(model, path)
             set_module(
@@ -439,6 +440,8 @@ def parallelize_model(
             )
 
         model = fully_shard(model, **fsdp_config, reshard_after_forward=True)
+
+        model.set_modules_to_forward_prefetch(modules)
     else:
         raise ValueError(f"Invalid fsdp_type: {distributed_args.fsdp_type}")
 
