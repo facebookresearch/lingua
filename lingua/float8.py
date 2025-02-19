@@ -189,3 +189,127 @@ def convert_linears_to_fp8(root_module: torch.nn.Module, recipe: str, filter: st
     reset_cudagraph_trees()
 
     return out
+
+
+# We need some upstream PyTorch fixes which are only present in v2.7+ or in
+# nightlies starting from January 7, 2025. For earlier versions, we copy-pasted
+# the relevant pieces of code below.
+if torch.__version__ < "2.7.0.dev20250107":
+    from torch.distributed.device_mesh import DeviceMesh
+    from torch.distributed.tensor._dtensor_spec import DTensorSpec
+    from torch.distributed.tensor._op_schema import (
+        OpSchema,
+        OpStrategy,
+        PlacementStrategy,
+        RuntimeSchemaInfo,
+    )
+    from torch.distributed.tensor._ops._einsum_strategy import gen_einsum_strategies
+    from torch.distributed.tensor._ops._math_ops import (
+        _infer_reduction_dims,
+        common_reduction_strategy,
+    )
+    from torch.distributed.tensor._ops.utils import (
+        generate_redistribute_costs,
+        is_tensor_shardable,
+        prod,
+        register_op_strategy,
+    )
+    from torch.distributed.tensor.placement_types import Replicate
+
+    # Cherry-pick of https://github.com/pytorch/pytorch/pull/143747
+
+    LINEAR_REDUCTION_OP_MAP = {
+        torch.ops.aten.amax.default: "max",
+        torch.ops.aten.amin.default: "min",
+    }
+
+    @register_op_strategy(
+        list(LINEAR_REDUCTION_OP_MAP.keys()), schema_info=RuntimeSchemaInfo(1)
+    )
+    def linear_reduction_strategy(mesh: DeviceMesh, op_schema: OpSchema) -> OpStrategy:
+        args_schema = op_schema.args_schema
+        input_strategy = args_schema[0]
+        assert isinstance(input_strategy, OpStrategy)
+        dims = None
+        if len(op_schema.args_schema) > 1:
+            dims = _infer_reduction_dims(args_schema[1], input_strategy.ndim)
+
+        reduce_dims = list(range(input_strategy.ndim)) if dims is None else dims
+
+        keep_dim = len(op_schema.args_schema) > 2 and bool(op_schema.args_schema[2])
+        reduction_op = LINEAR_REDUCTION_OP_MAP[op_schema.op]
+        return common_reduction_strategy(
+            mesh,
+            input_strategy,
+            reduce_dims,
+            keep_dim=keep_dim,
+            reduction_linear=True,
+            reduction_op=reduction_op,
+        )
+
+    # Cherry-pick of https://github.com/pytorch/pytorch/pull/143760
+
+    def _mm_like_strategy(
+        mm_equation: str, mesh: DeviceMesh, op_schema: OpSchema
+    ) -> OpStrategy:
+        (
+            self_strategy,
+            mat2_strategy,
+            scale_self_strategy,
+            scale_mat2_strategy,
+            bias_strategy,
+            scale_result_strategy,
+            *_,
+        ) = op_schema.args_schema
+        assert isinstance(self_strategy, OpStrategy)
+        assert isinstance(mat2_strategy, OpStrategy)
+        assert isinstance(scale_self_strategy, OpStrategy)
+        assert isinstance(scale_mat2_strategy, OpStrategy)
+        assert bias_strategy is None
+        assert scale_result_strategy is None
+        # generate all possible strategies for mm
+        mm_strategy = gen_einsum_strategies(mm_equation, mesh)
+        assert isinstance(mm_strategy, OpStrategy)
+        # filter out invalid strategies and associate costs
+        strategies = mm_strategy.strategies
+        filtered_strategies = []
+        for strtg in strategies:
+            assert isinstance(strtg, PlacementStrategy)
+            assert strtg.input_specs is not None
+            self_spec = strtg.input_specs[0]
+            mat2_spec = strtg.input_specs[1]
+            assert isinstance(self_spec, DTensorSpec)
+            assert isinstance(mat2_spec, DTensorSpec)
+            scale_self_spec = (
+                DTensorSpec(self_spec.mesh, (Replicate(),))
+                if prod(scale_self_strategy.shape) == 1
+                else self_spec
+            )
+            scale_mat2_spec = (
+                DTensorSpec(mat2_spec.mesh, (Replicate(),))
+                if prod(scale_mat2_strategy.shape) == 1
+                else mat2_spec
+            )
+            strtg.input_specs.extend([scale_self_spec, scale_mat2_spec])
+            if (
+                is_tensor_shardable(self_strategy.shape, self_spec)
+                and is_tensor_shardable(mat2_strategy.shape, mat2_spec)
+                and is_tensor_shardable(scale_self_strategy.shape, scale_self_spec)
+                and is_tensor_shardable(scale_mat2_strategy.shape, scale_mat2_spec)
+            ):
+                redistribute_cost = [
+                    generate_redistribute_costs(self_strategy, self_spec),
+                    generate_redistribute_costs(mat2_strategy, mat2_spec),
+                    generate_redistribute_costs(scale_self_strategy, scale_self_spec),
+                    generate_redistribute_costs(scale_mat2_strategy, scale_mat2_spec),
+                ]
+                strtg.redistribute_cost = redistribute_cost
+                filtered_strategies.append(strtg)
+
+        mm_strategy.strategies = filtered_strategies
+
+        return mm_strategy
+
+    @register_op_strategy(torch.ops.aten._scaled_mm.default)
+    def mm_strategy(mesh: DeviceMesh, op_schema: OpSchema) -> OpStrategy:
+        return _mm_like_strategy("mk,kn->mn", mesh, op_schema)
