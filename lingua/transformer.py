@@ -16,7 +16,10 @@ from torch.nn.attention.flex_attention import (
 
 from lingua import probe
 
-flex_attention_comp = torch.compile(flex_attention)
+torch._dynamo.config.cache_size_limit = 64
+torch._dynamo.config.suppress_errors = True
+
+flex_attention_comp = torch.compile(flex_attention,dynamic=False)
 
 
 class InitStdFactor(Enum):

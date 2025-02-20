@@ -24,9 +24,10 @@ from lingua.transformer import (
     TiedLinear,
     cross_entropy,
 )
+import pdb
 
 
-def create_causal_mask(seqlen, attn_impl, sliding_window):
+def create_causal_mask(seqlen, attn_impl, sliding_window, masking_func, bsz=None):
     if sliding_window is not None and attn_impl == "xformers":
         return fmha.attn_bias.LocalAttentionFromBottomRightMask(
             window_left=sliding_window - 1, window_right=0
@@ -36,7 +37,7 @@ def create_causal_mask(seqlen, attn_impl, sliding_window):
     elif attn_impl == "sdpa":
         return "causal"
     elif attn_impl == "flex_attention":
-        return create_block_mask(causal_mask, None, None, seqlen, seqlen)
+        return create_block_mask(masking_func, bsz, None, seqlen, seqlen, _compile=True)
     else:
         raise NotImplementedError(
             f"Attention {attn_impl} with {sliding_window} sliding window not implemented"
@@ -99,16 +100,21 @@ class LMTransformer(BaseTransformer):
         tok_idx: Optional[torch.Tensor] = None,
         mask: Optional[Union[BlockMask, AttentionBias, torch.Tensor, str]] = None,
         attn_impl: str = "sdpa",
+        masking_func=causal_mask,
+        intradoc=False
     ):
         bsz, seqlen = token_values.shape
 
         h = self.tok_embeddings(token_values)
 
+        #pdb.set_trace()
+
         mask = (
             mask
             if mask is not None
-            else create_causal_mask(seqlen, attn_impl, self.sliding_window)
+            else create_causal_mask(seqlen, attn_impl, self.sliding_window, masking_func, bsz=bsz if intradoc else None)
         )
+        # print("Current mask", mask)
 
         h = super().forward(h, tok_idx=tok_idx, mask=mask, attn_impl=attn_impl)
 

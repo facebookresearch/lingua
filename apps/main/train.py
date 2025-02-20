@@ -22,7 +22,8 @@ import xformers.profiler
 from torch.optim import lr_scheduler
 from torch.distributed.checkpoint.stateful import Stateful
 from torch.distributed._tensor import DTensor
-
+from torch.nn.attention.flex_attention import create_block_mask
+import pdb
 from lingua.args import dataclass_from_dict, dump_config, flatten_dict
 from lingua.checkpoint import CheckpointArgs, CheckpointManager, load_from_checkpoint
 from lingua.data import (
@@ -102,6 +103,10 @@ class TrainArgs:
     # If set to None, eval is run locally otherwise it launches a new job with the given number of gpus
     async_eval_gpus: Optional[int] = None
     eval: Optional[Any] = None
+
+    intradoc_mask: bool = False
+    doc_separator: int = 2
+    dynamic_mask: bool = False
 
 
 @dataclass
@@ -216,6 +221,21 @@ def every_n_steps(train_state, freq, acc_step=None, acc_freq=None):
     elif acc_freq is not None:
         test = test and ((train_state.acc_step % acc_freq) == 0)
     return test
+
+def flex_causal(b, h, q_idx, kv_idx):
+    return q_idx >= kv_idx
+
+def create_flex_local_causal(w):
+    def flex_local_causal(b, h, q_idx, kv_idx):
+        return (q_idx >= kv_idx) & (kv_idx >= (q_idx//w * w))
+    return flex_local_causal
+
+def generate_doc_mask_mod(mask_mod, document_ids):
+    def intra_doc_mod(b, h, q_idx, kv_idx):
+        same_doc = document_ids[b][q_idx] == document_ids[b][kv_idx]
+        inner_mask = mask_mod(b, h, q_idx, kv_idx)
+        return same_doc & inner_mask
+    return intra_doc_mod
 
 
 def train(args: TrainArgs):
@@ -364,8 +384,36 @@ def train(args: TrainArgs):
                 # run the GC at different times so they slow down the whole pipeline
                 gc.collect()
 
-            input_ids = batch[:, :, 0].cuda()
-            labels = batch[:, :, 1].cuda()
+            input_ids = batch[:, :, 0]
+            labels = batch[:, :, 1]
+            # pdb.set_trace()
+            if args.dynamic_mask:
+                current_local_window=32 + train_state.step//8
+                #print('current local window', current_local_window)
+                local_causal_mask = create_flex_local_causal(current_local_window)
+                mask_func=local_causal_mask
+                flex_mask = create_block_mask(local_causal_mask, B=None, H=None, Q_LEN=input_ids.shape[-1], KV_LEN=input_ids.shape[-1],device="cpu", _compile=True) #  _compile=True)
+            elif args.intradoc_mask:
+                # Create a mask where EOS tokens are located
+                eos_mask = input_ids == args.doc_separator  # Shape: (batch_size, seq_length)
+                # Shift the EOS mask left (ensuring the EOS belongs to the previous document)
+                shifted_eos_mask = torch.zeros_like(eos_mask)
+                shifted_eos_mask[:, 1:] = eos_mask[:, :-1]  # Shift left by 1 position
+                # print(shifted_eos_mask.shape)
+                # Compute document IDs
+                document_ids = torch.cumsum(shifted_eos_mask, dim=1).cuda()
+                # print('document ids', document_ids.shape, 'num docs', document_ids[:,-1])
+                doc_causal_mask = generate_doc_mask_mod(flex_causal, document_ids)
+                mask_func=doc_causal_mask
+                # flex_mask = create_block_mask(doc_causal_mask, B=input_ids.shape[0], H=None, Q_LEN=input_ids.shape[-1], KV_LEN=input_ids.shape[-1],device="cpu", _compile=True) #  _compile=True)
+            else:
+                #print('Calculating causal mask')
+                # flex_mask = create_block_mask(flex_causal, B=None, H=None, Q_LEN=input_ids.shape[-1], KV_LEN=input_ids.shape[-1], _compile=True) #  _compile=True)
+                mask_func=flex_causal
+            input_ids = input_ids.cuda()
+            labels = labels.cuda()
+
+
             data_load_time = round(timer() - data_load_start, 4)
             nwords_since_last_log += input_ids.numel()
 
@@ -411,8 +459,8 @@ def train(args: TrainArgs):
                 assert (
                     next(model.parameters()).grad is None
                 ), "Probe model shouldn't have grads at this point"
-
-            loss = model(input_ids, labels)
+            # pdb.set_trace()
+            loss = model(input_ids, labels, mask=None, attn_impl="flex_attention", masking_func=mask_func, intradoc=args.intradoc_mask)
 
             if args.grad_acc_steps > 1:
                 model.set_requires_gradient_sync(train_state.acc_step == 0)
