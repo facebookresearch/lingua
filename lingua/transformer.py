@@ -15,6 +15,7 @@ from torch.nn.attention.flex_attention import (
 )
 
 from lingua import probe
+from .dyt import DyT
 
 flex_attention_comp = torch.compile(flex_attention)
 
@@ -261,35 +262,17 @@ class RotaryEmbedding(torch.nn.Module):
             return self.freqs_cis[0:seqlen]
 
 
-class RMSNorm(nn.Module):
-    """
-    Initialize the RMSNorm normalization layer.
-
-    Args:
-        dim (int): The dimension of the input tensor.
-        eps (float, optional): A small value added to the denominator for numerical stability. Default is 1e-6.
-
-    Attributes:
-        eps (float): A small value added to the denominator for numerical stability.
-        weight (nn.Parameter): Learnable scaling parameter.
-
-    """
-
-    def __init__(self, dim: int, eps: float = 1e-6):
+class DyTWrapper(nn.Module):  # Wrapper to adapt DyT to the RMSNorm interface
+    def __init__(self, dim: int, eps: float = 1e-6, init_alpha: float = 1.0):  # Added init_alpha
         super().__init__()
-        self.eps = eps
-        self.weight = nn.Parameter(torch.ones(dim))
-
-    def _norm(self, x: torch.Tensor):
-        return x * torch.rsqrt((x * x).mean(-1, keepdim=True) + self.eps)
+        self.dyt = DyT(dim, init_alpha)  # Pass dim to DyT as C
 
     def forward(self, x: torch.Tensor):
-        x = probe.log_stats(x, "resid")
-        output = self._norm(x.float())
-        return (output * self.weight.float()).type_as(x)
+        return self.dyt(x)
 
     def reset_parameters(self):
-        torch.nn.init.ones_(self.weight)  # type: ignore
+        # DyT has its own initialization, no need for specific initialization here
+        pass
 
 class TiedLinear(nn.Module):
     def __init__(self, tied_module: nn.Module) -> None:
