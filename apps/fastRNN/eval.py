@@ -40,8 +40,8 @@ class EvalArgs:
     metric_log_dir: Optional[str] = None
     ckpt_dir: str = ""
     generator: PackedRNNGeneratorArgs = field(default_factory=PackedRNNGeneratorArgs)
-    harness: Optional[LMHarnessArgs] = field(default_factory=LMHarnessArgs)
-    validation: Optional[ValidationArgs] = field(default_factory=ValidationArgs)
+    harness: Optional[LMHarnessArgs] = None
+    validation: Optional[ValidationArgs] = None
 
     wandb: Optional[Any] = None
 
@@ -73,15 +73,18 @@ def launch_eval(cfg: EvalArgs):
     model.eval()
     generator = PackedRNNGenerator(cfg.generator, model, tokenizer)
 
-    wrap = EvalHarnessLM(generator)
-    results = simple_evaluate(wrap, **asdict(cfg.harness))
+    results = None
+    if cfg.harness:
+        wrap = EvalHarnessLM(generator)
+        results = simple_evaluate(wrap, **asdict(cfg.harness))
     val_results =  None
     if cfg.validation:
         val_results = eval_on_val(generator, cfg.validation, train_cfg)
     if get_global_rank() == 0:
-        with open(Path(cfg.dump_dir) / "results.json", "w") as f:
-            f.write(json.dumps(results))
-        logger.info(f"All evaluation results: {results['results']}")
+        if results is not None:
+            with open(Path(cfg.dump_dir) / "results.json", "w") as f:
+                f.write(json.dumps(results))
+            logger.info(f"All evaluation results: {results['results']}")
         if val_results is not None:
             with open(Path(cfg.dump_dir) / "validation.json", "w") as f:
                 f.write(json.dumps(val_results))
@@ -95,11 +98,12 @@ def launch_eval(cfg: EvalArgs):
         }
         if cfg.global_step is not None:
             timestamp["global_step"] = cfg.global_step
-        print(
-            json.dumps(timestamp | results["results"]),
-            file=open(metric_log_path, mode="a"),
-            flush=True,
-        )
+        if results is not None:
+            print(
+                json.dumps(timestamp | results["results"]),
+                file=open(metric_log_path, mode="a"),
+                flush=True,
+            )
 
         val_log_path = Path(cfg.metric_log_dir) / "metrics.validation.jsonl"
         if val_results is not None:
