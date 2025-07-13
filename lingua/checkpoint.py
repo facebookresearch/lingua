@@ -290,6 +290,18 @@ class CheckpointManager:
         )
         dcp.load(state_dict, checkpoint_id=path)
         logger.info("Model and optim reloaded")
+
+        current_lrs = train_state.scheduler.get_last_lr()
+        for i, param_group in enumerate(optimizer.param_groups):
+            if i < len(correct_lrs):
+                param_group['lr'] = current_lrs[i]
+            else:
+                logger.warning(
+                    f"Optimizer has more param groups ({len(optimizer.param_groups)}) "
+                    f"than the scheduler has LRs ({len(current_lrs)}). "
+                    f"Param group {i} was not updated."
+                )
+        logger.info("Set the lr to the Right value")
     
     @classmethod
     def instantiate_and_make_dir(cls, args: CheckpointArgs):
