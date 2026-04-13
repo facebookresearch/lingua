@@ -2,7 +2,6 @@
 
 import atexit
 import contextlib
-from itertools import chain
 import logging
 import multiprocessing as mp
 import os
@@ -15,25 +14,24 @@ import sys
 import tempfile
 from dataclasses import asdict, dataclass
 from functools import lru_cache, partial, reduce
+from itertools import chain
 from typing import List, Optional, Tuple, Union
 
 import torch
-from torch.distributed import ReduceOp
-from torch.nn.parallel import DistributedDataParallel as DDP
+
+# for no recompute ops
 from torch import distributed as dist
-from torch.distributed._tensor import DTensor
+from torch.distributed import ReduceOp
 from torch.distributed._composable.fsdp import MixedPrecisionPolicy, fully_shard
+from torch.distributed._tensor import DTensor
 from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
     checkpoint_wrapper,
 )
-from torch.utils.checkpoint import (
-    create_selective_checkpoint_contexts,
-    CheckpointPolicy,
-)
 from torch.distributed.device_mesh import DeviceMesh, init_device_mesh
-
-# for no recompute ops
-import xformers.ops
+from torch.utils.checkpoint import (
+    CheckpointPolicy,
+    create_selective_checkpoint_contexts,
+)
 
 from lingua.float8 import convert_linears_to_fp8
 
@@ -269,7 +267,7 @@ def setup_torch_distributed(dist_args):
     if dist_args.matmul_allow_tf32:
         torch.backends.cuda.matmul.allow_tf32 = True
         logger.warning(
-            f"WARNING: Setting torch.backends.matmul.allow_tf32 to True. This is faster but less accurate."
+            "WARNING: Setting torch.backends.matmul.allow_tf32 to True. This is faster but less accurate."
         )
     torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = (
         dist_args.allow_bf16_reduced_precision_reduction
@@ -411,7 +409,7 @@ def parallelize_model(
         ), "Only full shard is supported for TP parallelism"
         assert tp_parallelize is not None, "TP plan is required for TP parallelism"
         assert (
-            distributed_args.compile == False
+            distributed_args.compile == False  # noqa: E712
         ), "Compile is not supported for TP parallelism"
 
         tp_parallelize(model, device_mesh["tp"], model_args, distributed_args)

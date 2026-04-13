@@ -1,10 +1,10 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import logging
+import math
 from dataclasses import dataclass
 from functools import partial
-import math
 
-import logging
 from torch import nn
 from torch.optim import AdamW, lr_scheduler
 

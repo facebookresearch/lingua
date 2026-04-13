@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
 import torch
-from torch import nn
-from torch.nn.attention.flex_attention import create_block_mask, BlockMask
-
 import torch.utils.checkpoint
-from xformers.ops import fmha, AttentionBias
+from torch import nn
+from torch.nn.attention.flex_attention import BlockMask, create_block_mask
+from xformers.ops import AttentionBias, fmha
+
 from lingua.transformer import (
     BaseTransformer,
     BaseTransformerArgs,

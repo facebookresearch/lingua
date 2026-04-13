@@ -1,30 +1,27 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from dataclasses import asdict, dataclass, field
-from datetime import datetime
 import json
 import logging
-import os
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-from lm_eval import simple_evaluate
-
-from omegaconf import OmegaConf
 import torch
+from lm_eval import simple_evaluate
+from omegaconf import OmegaConf
 
 from apps.main.eval import (
-    ValidationArgs,
     EvalHarnessLM,
     LMHarnessArgs,
+    ValidationArgs,
     eval_on_val,
 )
+from apps.main.generate import load_consolidated_model_and_tokenizer
 from apps.mamba.generate import (
     PackedCausalMambaGenerator,
     PackedCausalMambaGeneratorArgs,
 )
-
-from apps.main.generate import load_consolidated_model_and_tokenizer
 from apps.mamba.mamba import LMMamba, LMMambaArgs
 from lingua.args import dump_config
 from lingua.checkpoint import CONSOLIDATE_FOLDER, consolidate_checkpoints

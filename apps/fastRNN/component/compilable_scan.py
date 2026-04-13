@@ -3,8 +3,8 @@
 from typing import Tuple
 
 import torch
+from accelerated_scan.warp import warpscan_backward, warpscan_forward
 
-from accelerated_scan.warp import warpscan_forward, warpscan_backward
 
 @torch.library.custom_op(
     "scan::scan_fwd",

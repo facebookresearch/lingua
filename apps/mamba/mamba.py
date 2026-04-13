@@ -6,8 +6,8 @@ from typing import Optional
 import torch
 from torch import nn
 
+from apps.mamba.core_mamba import BaseMamba, BaseMambaArgs
 from lingua.transformer import RMSNorm, TiedLinear, cross_entropy
-from apps.mamba.core_mamba import BaseMambaArgs, BaseMamba
 
 
 @dataclass

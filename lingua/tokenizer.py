@@ -1,15 +1,15 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import abc
+import logging
+import os
 from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
-import logging
-import os
 
-from sentencepiece import SentencePieceProcessor
 import tiktoken
+from sentencepiece import SentencePieceProcessor
 from tiktoken.load import load_tiktoken_bpe
 
 logger = logging.getLogger(__name__)

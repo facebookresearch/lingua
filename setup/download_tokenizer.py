@@ -1,6 +1,7 @@
-import os
 import argparse
+import os
 from typing import Optional
+
 from requests.exceptions import HTTPError
 
 TOKENIZER = {

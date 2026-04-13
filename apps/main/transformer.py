@@ -5,18 +5,17 @@ from typing import Optional, Tuple, Union
 
 import torch
 from torch import nn
-from torch.nn.attention.flex_attention import create_block_mask, BlockMask
-
 from torch.distributed._tensor import Replicate, Shard
 from torch.distributed.tensor.parallel import (
     ColwiseParallel,
+    PrepareModuleInput,
     RowwiseParallel,
     SequenceParallel,
-    PrepareModuleInput,
     parallelize_module,
 )
+from torch.nn.attention.flex_attention import BlockMask, create_block_mask
+from xformers.ops import AttentionBias, fmha
 
-from xformers.ops import fmha, AttentionBias
 from lingua.transformer import (
     BaseTransformer,
     BaseTransformerArgs,

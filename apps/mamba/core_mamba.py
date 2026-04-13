@@ -1,24 +1,21 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional, Tuple
 
 import torch
+from causal_conv1d.causal_conv1d_varlen import causal_conv1d_varlen_states
+from mamba_ssm.ops.triton.selective_state_update import selective_state_update
 from torch import nn
 from torch.nn import functional as F
-
-from causal_conv1d.causal_conv1d_varlen import causal_conv1d_varlen_states
 
 from apps.mamba.component.causal_conv1d_compilable import (
     causal_conv1d_fn,
     causal_conv1d_update,
 )
 from apps.mamba.component.ssm_compilable import mamba_chunk_scan_combined
-from mamba_ssm.ops.triton.selective_state_update import selective_state_update
-
-from lingua.transformer import InitStdFactor, RMSNorm
 from lingua.probe import log_stats
+from lingua.transformer import InitStdFactor, RMSNorm
 
 
 @dataclass

@@ -1,8 +1,10 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import time
+
 import torch
 import torch.nn.functional as F
-import time
+
 
 ####################################
 # This file implement MultiLinear Upsampling described in the paper

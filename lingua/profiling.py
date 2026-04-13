@@ -2,22 +2,21 @@
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 
 import contextlib
-from dataclasses import dataclass
-import os
-from pathlib import Path
-import torch.distributed
 import logging
+import os
+from dataclasses import dataclass
+from pathlib import Path
 
-from torch.profiler.profiler import profile
+import torch.distributed
+import wandb
 import xformers.profiler
+from torch.profiler.profiler import profile
 from xformers.profiler import (
     MemSnapshotsProfiler,
     PyTorchProfiler,
 )
 
 from lingua.distributed import get_is_master
-
-import wandb
 
 
 @dataclass
@@ -34,9 +33,10 @@ logger = logging.getLogger()
 
 
 def perfetto_to_html(json_file, html_file):
-    import viztracer
     import gzip
     import string
+
+    import viztracer
 
     root = os.path.dirname(viztracer.__file__)
     sub = {}
