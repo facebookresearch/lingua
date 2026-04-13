@@ -1,18 +1,18 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from typing import Tuple
+
 import torch
 
+# from accelerated_scan.triton import scan as triton_scan
+from accelerated_scan.ref import scan as ref_scan
 from causal_conv1d.causal_conv1d_varlen import causal_conv1d_varlen_states
+
+from apps.fastRNN.component.compilable_scan import scan as accelerated_scan
 from apps.mamba.component.causal_conv1d_compilable import (
     causal_conv1d_fn,
     causal_conv1d_update,
 )
-
-from apps.fastRNN.component.compilable_scan import scan as accelerated_scan
-
-# from accelerated_scan.triton import scan as triton_scan
-from accelerated_scan.ref import scan as ref_scan
 
 
 def conv1d(

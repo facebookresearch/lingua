@@ -1,8 +1,9 @@
 import logging
+from collections import deque
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
-from collections import deque
+
 import numpy as np
 import regex as re
 

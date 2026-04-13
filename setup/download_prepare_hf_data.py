@@ -2,8 +2,9 @@
 
 import argparse
 import os
-import time
 import subprocess
+import time
+
 import requests
 from huggingface_hub import snapshot_download
 

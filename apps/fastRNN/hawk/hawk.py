@@ -6,8 +6,8 @@ from typing import Optional
 import torch
 from torch import nn
 
+from apps.fastRNN.hawk.core_hawk import BaseHawk, BaseHawkArgs
 from lingua.transformer import RMSNorm, TiedLinear, cross_entropy
-from apps.fastRNN.hawk.core_hawk import BaseHawkArgs, BaseHawk
 
 
 @dataclass

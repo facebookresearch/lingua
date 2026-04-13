@@ -6,8 +6,8 @@ from typing import Optional
 import torch
 from torch import nn
 
+from apps.fastRNN.minGRU.core_gru import BaseMinGRU, BaseMinGRUArgs
 from lingua.transformer import RMSNorm, TiedLinear, cross_entropy
-from apps.fastRNN.minGRU.core_gru import BaseMinGRUArgs, BaseMinGRU
 
 
 @dataclass

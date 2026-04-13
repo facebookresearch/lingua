@@ -1,50 +1,54 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 
-from copy import deepcopy
 import gc
 import logging
 import os
 import sys
-import time
 from contextlib import ExitStack
+from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from timeit import default_timer as timer
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-import numpy as np
-from omegaconf import OmegaConf
 import torch
 import torch.distributed
-import torch.nn.functional as F
+import wandb
 import xformers.profiler
-from torch.optim import lr_scheduler
-from torch.distributed.checkpoint.stateful import Stateful
+from omegaconf import OmegaConf
 from torch.distributed._tensor import DTensor
+from torch.distributed.checkpoint.stateful import Stateful
+from torch.optim import lr_scheduler
 
-from lingua.args import dataclass_from_dict, dump_config, flatten_dict
-from lingua.checkpoint import CheckpointArgs, CheckpointManager, load_from_checkpoint
 from apps.aunet.data.data import (
     DataArgs,
     PackTokensState,
     build_dataloader_from_args,
     init_dataloader_state_from_args,
 )
+from apps.aunet.hierarchical import (
+    HierarchicalArgs,
+    HierarchicalTransformer,
+    build_fsdp_grouping_plan,
+    get_no_recompute_ops,
+)
+from lingua.args import dataclass_from_dict, dump_config, flatten_dict
+from lingua.checkpoint import CheckpointArgs, CheckpointManager, load_from_checkpoint
 from lingua.distributed import (
     DistributedArgs,
     EnvironmentArgs,
-    init_signal_handler,
+    check_model_value_range,
+    clean_env,
     dist_mean_dict,
     get_device_mesh,
     get_is_master,
     get_world_size,
+    init_signal_handler,
     parallelize_model,
+    requeue_slurm_job,
     setup_env,
     setup_torch_distributed,
-    clean_env,
-    requeue_slurm_job,
-    check_model_value_range,
 )
 from lingua.logger import init_logger
 from lingua.metrics import (
@@ -54,18 +58,10 @@ from lingua.metrics import (
     get_num_params,
 )
 from lingua.optim import OptimArgs, build_optimizer
-from lingua.profiling import ProfilerArgs, maybe_run_profiler
-from lingua.tokenizer import build_tokenizer
-from apps.aunet.hierarchical import (
-    HierarchicalArgs,
-    HierarchicalTransformer,
-    build_fsdp_grouping_plan,
-    get_no_recompute_ops,
-)
 from lingua.probe import AutoProbeD
+from lingua.profiling import ProfilerArgs, maybe_run_profiler
 from lingua.stool import StoolArgs, launch_job
-
-import wandb
+from lingua.tokenizer import build_tokenizer
 
 logger = logging.getLogger()
 
@@ -518,10 +514,10 @@ def train(args: TrainArgs):
                 )
 
                 to_sync = {}
-                to_sync[f"loss/out"] = loss.item()
-                to_sync[f"ce/out"] = ce_loss.item()
+                to_sync["loss/out"] = loss.item()
+                to_sync["ce/out"] = ce_loss.item()
                 if mask_loss is not None:
-                    to_sync[f"mask_loss/out"] = mask_loss.item()
+                    to_sync["mask_loss/out"] = mask_loss.item()
 
                 for i in range(len(nb_toks)):
                     nb_toks[i] = nb_toks[i].item()
@@ -566,9 +562,9 @@ def train(args: TrainArgs):
                 train_state, args.checkpoint.eval.every, acc_step=0
             ) or every_n_steps(train_state, args.steps, acc_step=0)):
                 from apps.aunet.eval import (
-                    launch_eval,
                     EVAL_FOLDER_NAME,
                     EvalArgs,
+                    launch_eval,
                 )
 
                 eval_args = dataclass_from_dict(EvalArgs, args.eval)

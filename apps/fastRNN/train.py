@@ -1,28 +1,38 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 
-from copy import deepcopy
 import gc
 import logging
 import os
 import sys
-import time
 from contextlib import ExitStack
+from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from timeit import default_timer as timer
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-import numpy as np
-from omegaconf import OmegaConf
 import torch
 import torch.distributed
-import torch.nn.functional as F
+import wandb
 import xformers.profiler
-from torch.optim import lr_scheduler
-from torch.distributed.checkpoint.stateful import Stateful
+from omegaconf import OmegaConf
 from torch.distributed._tensor import DTensor
+from torch.distributed.checkpoint.stateful import Stateful
+from torch.optim import lr_scheduler
 
+from apps.fastRNN.hawk.hawk import (
+    LMHawk,
+    LMHawkArgs,
+)
+from apps.fastRNN.minGRU.mingru import (
+    LMMinGRU,
+    LMMinGRUArgs,
+)
+from apps.fastRNN.minLSTM.minlstm import (
+    LMMinLSTM,
+    LMMinLSTMArgs,
+)
 from lingua.args import dataclass_from_dict, dump_config, flatten_dict
 from lingua.checkpoint import CheckpointArgs, CheckpointManager, load_from_checkpoint
 from lingua.data import (
@@ -34,17 +44,17 @@ from lingua.data import (
 from lingua.distributed import (
     DistributedArgs,
     EnvironmentArgs,
-    init_signal_handler,
+    check_model_value_range,
+    clean_env,
     dist_mean_dict,
     get_device_mesh,
     get_is_master,
     get_world_size,
+    init_signal_handler,
     parallelize_model,
+    requeue_slurm_job,
     setup_env,
     setup_torch_distributed,
-    clean_env,
-    requeue_slurm_job,
-    check_model_value_range,
 )
 from lingua.logger import init_logger
 from lingua.metrics import (
@@ -54,26 +64,10 @@ from lingua.metrics import (
     get_num_params,
 )
 from lingua.optim import OptimArgs, build_optimizer
-from lingua.profiling import ProfilerArgs, maybe_run_profiler
-from lingua.tokenizer import build_tokenizer
-
-from apps.fastRNN.minGRU.mingru import (
-    LMMinGRU,
-    LMMinGRUArgs,
-)
-from apps.fastRNN.minLSTM.minlstm import (
-    LMMinLSTM,
-    LMMinLSTMArgs,
-)
-from apps.fastRNN.hawk.hawk import (
-    LMHawk,
-    LMHawkArgs,
-)
-
 from lingua.probe import AutoProbeD
+from lingua.profiling import ProfilerArgs, maybe_run_profiler
 from lingua.stool import StoolArgs, launch_job
-
-import wandb
+from lingua.tokenizer import build_tokenizer
 
 logger = logging.getLogger()
 
@@ -257,7 +251,7 @@ def train(args: TrainArgs):
         logger.info(f"Running on dp size : {dp_degree}")
 
         torch.manual_seed(args.seed)
-        logger.info(f"Building model")
+        logger.info("Building model")
 
         # Initializing Model in meta device allows us to initialize models much bigger than 1 gpu's memory
         with torch.device("meta"):
@@ -270,7 +264,7 @@ def train(args: TrainArgs):
             else:
                 raise ValueError(f"Model type {args.model_type} not recognized")
 
-        logger.info(f"Model is built !")
+        logger.info("Model is built !")
 
         model_param_count = get_num_params(model)
 
@@ -554,9 +548,9 @@ def train(args: TrainArgs):
                 train_state, args.checkpoint.eval.every, acc_step=0
             ):
                 from apps.fastRNN.eval import (
-                    launch_eval,
                     EVAL_FOLDER_NAME,
                     EvalArgs,
+                    launch_eval,
                 )
 
                 eval_args = dataclass_from_dict(EvalArgs, args.eval)

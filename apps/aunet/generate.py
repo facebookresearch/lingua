@@ -1,25 +1,21 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import time
 from itertools import chain
 from pathlib import Path
-import time
 from typing import Optional
-from omegaconf import OmegaConf
-from tqdm import tqdm
+
 import torch
+from omegaconf import OmegaConf
 from torch.nn import functional as F
 from torch.nn.attention.flex_attention import create_block_mask
+from tqdm import tqdm
 
-from apps.aunet.hierarchical import(
-    SimpleTransition,
-    MaxSumMask,
-)
+from apps.aunet.data.regex_cutting import RegexArgs, RegexPool
 from apps.aunet.hierarchical import (
-    HierarchicalTransformer,
     HierarchicalArgs,
+    HierarchicalTransformer,
 )
-
-from apps.aunet.data.regex_cutting import RegexPool, RegexArgs
 from apps.main.generate import (
     PackedCausalTransformerGenerator,
     PackedCausalTransformerGeneratorArgs,
@@ -27,12 +23,11 @@ from apps.main.generate import (
     pack_prompts,
     sample_tokens,
 )
-
 from lingua.args import dataclass_from_dict
-from lingua.tokenizer import Tokenizer, build_tokenizer
-
 from lingua.checkpoint import CONSOLIDATE_NAME
+from lingua.tokenizer import Tokenizer, build_tokenizer
 from lingua.transformer import Attention, causal_mask, generate_doc_mask_mod, lengths_to_local_ids, lengths_to_start_ids
+
 
 def causal_sliding_mask(sliding_window: int):
     def mask(b, h, q_idx, kv_idx):

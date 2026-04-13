@@ -1,11 +1,11 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from dataclasses import dataclass
 import json
 import os
 import shutil
 import subprocess
-from typing import Dict, Any
+from dataclasses import dataclass
+from typing import Any, Dict
 
 from omegaconf import OmegaConf
 

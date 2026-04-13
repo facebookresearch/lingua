@@ -3,13 +3,9 @@
 import time
 from dataclasses import dataclass
 
-from omegaconf import OmegaConf
-
 import torch
+from omegaconf import OmegaConf
 from torch import nn
-
-from lingua.args import dataclass_from_dict
-from lingua.tokenizer import Tokenizer
 
 from apps.main.generate import (
     PackedCausalTransformerGenerator,
@@ -17,7 +13,9 @@ from apps.main.generate import (
     load_consolidated_model_and_tokenizer,
 )
 from apps.mamba.core_mamba import SSM
-from apps.mamba.mamba import LMMambaArgs, LMMamba, StateCache
+from apps.mamba.mamba import LMMamba, LMMambaArgs, StateCache
+from lingua.args import dataclass_from_dict
+from lingua.tokenizer import Tokenizer
 
 
 @dataclass

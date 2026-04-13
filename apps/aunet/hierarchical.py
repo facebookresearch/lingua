@@ -1,9 +1,9 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from dataclasses import asdict, dataclass, field
-from copy import deepcopy
-from functools import partial
 import math
+from copy import deepcopy
+from dataclasses import asdict, dataclass, field
+from functools import partial
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
@@ -13,18 +13,17 @@ from torch.nn.attention.flex_attention import BlockMask
 from xformers.ops.fmha import AttentionBias
 
 from apps.aunet.index_matmul import IndexedMatMul
-
-from lingua.metrics import get_num_params
-from lingua.transformer import (
-    RMSNorm,
-    BaseTransformer, 
-    BaseTransformerArgs,
-)
-
 from apps.main.transformer import (
     create_causal_mask,
     cross_entropy,
 )
+from lingua.metrics import get_num_params
+from lingua.transformer import (
+    BaseTransformer,
+    BaseTransformerArgs,
+    RMSNorm,
+)
+
 
 @dataclass
 class CausalTransformerArgs(BaseTransformerArgs):

@@ -1,30 +1,26 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from pathlib import Path
 import time
 from dataclasses import dataclass
-
-from omegaconf import OmegaConf
+from pathlib import Path
 
 import torch
+from omegaconf import OmegaConf
 from torch import nn
 
-from lingua.args import dataclass_from_dict
-from lingua.checkpoint import CONSOLIDATE_NAME
-from lingua.tokenizer import Tokenizer, build_tokenizer
-
+from apps.fastRNN.hawk.core_hawk import RGLRU
+from apps.fastRNN.hawk.hawk import LMHawk, LMHawkArgs
+from apps.fastRNN.minGRU.core_gru import GRU
+from apps.fastRNN.minGRU.mingru import LMMinGRU, LMMinGRUArgs
+from apps.fastRNN.minLSTM.core_lstm import LSTM
+from apps.fastRNN.minLSTM.minlstm import LMMinLSTM, LMMinLSTMArgs
 from apps.main.generate import (
     PackedCausalTransformerGenerator,
     PackedCausalTransformerGeneratorArgs,
 )
-
-from apps.fastRNN.minGRU.core_gru import GRU
-from apps.fastRNN.minLSTM.core_lstm import LSTM
-from apps.fastRNN.hawk.core_hawk import RGLRU
-
-from apps.fastRNN.minGRU.mingru import LMMinGRU, LMMinGRUArgs
-from apps.fastRNN.minLSTM.minlstm import LMMinLSTM, LMMinLSTMArgs
-from apps.fastRNN.hawk.hawk import LMHawk, LMHawkArgs
+from lingua.args import dataclass_from_dict
+from lingua.checkpoint import CONSOLIDATE_NAME
+from lingua.tokenizer import Tokenizer, build_tokenizer
 
 
 def load_consolidated_model_and_tokenizer(consolidated_path):

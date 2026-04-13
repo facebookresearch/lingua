@@ -1,10 +1,10 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from datetime import timedelta
 import logging
 import math
 import sys
 import time
+from datetime import timedelta
 
 from lingua.distributed import get_global_rank, get_is_slurm_job
 

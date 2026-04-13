@@ -1,17 +1,15 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional, Tuple
+from dataclasses import dataclass
+from typing import Optional
 
 import torch
 from torch import nn
 from torch.nn import functional as F
 
-from lingua.transformer import FeedForward, InitStdFactor, RMSNorm
-from lingua.probe import log_stats
-
 from apps.fastRNN.component.rnn_common import conv1d, scan
+from lingua.probe import log_stats
+from lingua.transformer import FeedForward, InitStdFactor, RMSNorm
 
 
 @dataclass

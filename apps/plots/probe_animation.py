@@ -6,16 +6,17 @@ python probe_animation.py /path/to/xp [/path/to/other/xp ...]
 Where `/path/to/xp` is a folder containing `probe/probe.0.jsonl`
 """
 
-import math
-from pathlib import Path
+import argparse
 import json
+import math
+from multiprocessing import Pool
+from pathlib import Path
+
+import matplotlib
+import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.animation as animation
-import matplotlib
 from matplotlib import rc
-from multiprocessing import Pool
-import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("probe_folders", help="contains a `probe` folder", nargs="+")

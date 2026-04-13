@@ -2,17 +2,17 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple, Union
 
 import torch
 from torch import nn
 from torch.nn import functional as F
-from xformers.ops import fmha, AttentionBias
 from torch.nn.attention.flex_attention import (
     BlockMask,
-    flex_attention,
     _mask_mod_signature,
+    flex_attention,
 )
+from xformers.ops import AttentionBias, fmha
 
 from lingua import probe
 

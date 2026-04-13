@@ -1,8 +1,10 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from typing import Optional, Tuple
-import torch
+
 import causal_conv1d_cuda
+import torch
+
 
 # Causal Conv1D Forward Function
 @torch.library.custom_op(

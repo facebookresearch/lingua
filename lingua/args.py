@@ -1,9 +1,9 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import argparse
 import logging
-from omegaconf import OmegaConf, DictConfig, ListConfig
 from typing import Type, TypeVar
+
+from omegaconf import DictConfig, ListConfig, OmegaConf
 
 logger = logging.getLogger()
 

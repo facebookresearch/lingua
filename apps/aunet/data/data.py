@@ -1,19 +1,20 @@
 import contextlib
-from copy import deepcopy
-from functools import partial
 import json
-from dataclasses import dataclass, field
-from multiprocessing import Process, Queue, Event
-from queue import Full, Empty
-from multiprocessing.synchronize import Event as EventClass
-import os
-from pathlib import Path
-from queue import Full
-from typing import Dict, Any, Iterator, Optional, TypedDict
-from lingua.tokenizer import build_tokenizer, TokenizerArgs
-from apps.aunet.data.regex_cutting import RegexPool, RegexArgs, map_codepoint_to_byte
-import numpy as np
 import logging
+import os
+from copy import deepcopy
+from dataclasses import dataclass, field
+from functools import partial
+from multiprocessing import Event, Process, Queue
+from multiprocessing.synchronize import Event as EventClass
+from pathlib import Path
+from queue import Empty, Full
+from typing import Any, Dict, Iterator, Optional, TypedDict
+
+import numpy as np
+
+from apps.aunet.data.regex_cutting import RegexArgs, RegexPool, map_codepoint_to_byte
+from lingua.tokenizer import TokenizerArgs, build_tokenizer
 
 logger = logging.getLogger()
 
@@ -159,7 +160,7 @@ def read_jsonl(
         JSONLState: Represents the state of each line read according to window and offset.
     """
     if (offset < 0) or (offset >= block_size):
-        raise RuntimeError(f"JSONL iterator offset value is invalid")
+        raise RuntimeError("JSONL iterator offset value is invalid")
     # We assume the start position is either 0 or given by the last line yielded
     # Therefore the current line is right after the offset (modulo block_size)
     current_line = offset + 1 if position > 0 else 0

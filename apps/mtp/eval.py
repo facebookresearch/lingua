@@ -1,15 +1,14 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from dataclasses import asdict
-from datetime import datetime
 import json
 import logging
+from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
 
-from lm_eval import simple_evaluate
-
-from omegaconf import OmegaConf
 import torch
+from lm_eval import simple_evaluate
+from omegaconf import OmegaConf
 
 from apps.main.eval import (
     EvalArgs,
@@ -19,7 +18,7 @@ from apps.main.generate import (
     PackedCausalTransformerGenerator,
     load_consolidated_model_and_tokenizer,
 )
-from apps.mtp.transformer import LMTransformer, LMMTPArgs
+from apps.mtp.transformer import LMMTPArgs, LMTransformer
 from lingua.args import dump_config
 from lingua.checkpoint import CONSOLIDATE_FOLDER, consolidate_checkpoints
 from lingua.distributed import DistributedArgs, get_global_rank, setup_torch_distributed

@@ -6,29 +6,22 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import torch
 import torch.distributed as dist
 import torch.distributed.checkpoint as dcp
-from torch.distributed.checkpoint import FileSystemReader
 import torch.nn as nn
+import torch.optim.optimizer
 from omegaconf import OmegaConf
 from torch.distributed._tensor import DeviceMesh
-from torch.distributed.checkpoint.state_dict import (
-    StateDictOptions,
-    get_model_state_dict,
-    get_optimizer_state_dict,
-    get_state_dict,
-    set_state_dict,
-    set_model_state_dict,
-    set_optimizer_state_dict,
-)
 from torch.distributed.checkpoint.format_utils import (
-    torch_save_to_dcp,
     dcp_to_torch_save,
 )
-import torch.optim.optimizer
+from torch.distributed.checkpoint.state_dict import (
+    get_model_state_dict,
+    get_state_dict,
+)
 
 from lingua.distributed import get_is_master
 
@@ -89,7 +82,7 @@ def consolidate_checkpoints(ckpt_dir: str):
 
 def load_from_checkpoint(ckpt_dir: str, model: nn.Module, optimizer: Optional[torch.optim.Optimizer] = None, model_key: str = "model", optim_key: str = "optim"):
     if not (Path(ckpt_dir) / '.metadata').exists():
-        raise ValueError(f"Please convert the checkpoint distcp format using `torch.distributed.checkpoint.format_utils.torch_save_to_dcp` before loading it")
+        raise ValueError("Please convert the checkpoint distcp format using `torch.distributed.checkpoint.format_utils.torch_save_to_dcp` before loading it")
     
     state_dict = {}
     if optimizer is not None:
